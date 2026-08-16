@@ -1,0 +1,58 @@
+# ============================================================
+# Фрозен Рекордс: HTTPS, заголовки безопасности, запреты доступа.
+# CSP разрешает только домены из CLAUDE.md п. 2.1:
+# mc.yandex.ru (Метрика), api-maps.yandex.ru + *.maps.yandex.net (Карты),
+# smartcaptcha.yandexcloud.net (SmartCaptcha). Всё остальное — 'self'.
+# ============================================================
+
+Options -Indexes
+AddDefaultCharset utf-8
+
+# --- Принудительный HTTPS ---
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# Служебный каталог app/ (.env, includes, data) — наружу не отдаём.
+# Дублирует запрет из app/.htaccess: защита не должна зависеть от одного файла.
+RewriteRule ^app/ - [F,L]
+</IfModule>
+
+# --- Заголовки безопасности ---
+<IfModule mod_headers.c>
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+# yastatic.net — собственная статика Яндекса, без неё виджет Яндекс.Карт
+# не отрисовывается (модули, шрифты и иконки карты лежат там).
+# Это инфраструктура Яндекса, а не зарубежный CDN, — см. CLAUDE.md п. 2.1.
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://mc.yandex.ru https://api-maps.yandex.ru https://*.api-maps.yandex.ru https://yastatic.net https://smartcaptcha.yandexcloud.net; style-src 'self' 'unsafe-inline' https://yastatic.net; img-src 'self' data: blob: https://mc.yandex.ru https://api-maps.yandex.ru https://*.maps.yandex.net https://yastatic.net; font-src 'self' https://yastatic.net; worker-src 'self' blob:; connect-src 'self' https://mc.yandex.ru https://api-maps.yandex.ru https://*.api-maps.yandex.ru https://*.maps.yandex.net https://yastatic.net https://smartcaptcha.yandexcloud.net; frame-src https://smartcaptcha.yandexcloud.net https://api-maps.yandex.ru; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+Header always set X-Content-Type-Options "nosniff"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+Header always set X-Frame-Options "DENY"
+Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+# --- Запрет доступа к служебным файлам ---
+<FilesMatch "\.(env|db|sqlite|log|bak|ini|sh|md)$">
+  Require all denied
+</FilesMatch>
+
+# --- Сжатие текстовых ответов (страницы, стили, скрипты) ---
+<IfModule mod_deflate.c>
+AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+AddOutputFilterByType DEFLATE application/javascript application/json application/xml
+AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# --- Кэширование статики ---
+<IfModule mod_expires.c>
+ExpiresActive On
+ExpiresByType text/css "access plus 7 days"
+ExpiresByType application/javascript "access plus 7 days"
+ExpiresByType image/jpeg "access plus 30 days"
+ExpiresByType image/png "access plus 30 days"
+ExpiresByType image/webp "access plus 30 days"
+ExpiresByType image/svg+xml "access plus 30 days"
+ExpiresByType font/woff2 "access plus 365 days"
+</IfModule>

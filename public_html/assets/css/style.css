@@ -33,8 +33,10 @@
 
 /* ---------- Токены ---------- */
 :root {
-  --bg: #0b0f16;
-  --bg-alt: #101623;
+  /* Чистый чёрный: логотип отрисован на чёрном, и фон картинки должен
+     сливаться с фоном страницы без видимой границы */
+  --bg: #000000;
+  --bg-alt: #0b111c;
   --panel: #151d2e;
   --panel-2: #1a2338;
   --line: #263149;
@@ -68,6 +70,21 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Подсветка по краям страницы: сверху и с боков, снизу её нет.
+   Слой закреплён на экране и лежит ПОЗАДИ содержимого (z-index: -1),
+   поэтому не затемняет текст и не перехватывает нажатия. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(31, 123, 255, 0.20) 0%, rgba(31, 123, 255, 0) 34vh),
+    linear-gradient(to right,  rgba(31, 123, 255, 0.15) 0%, rgba(31, 123, 255, 0) 26vw),
+    linear-gradient(to left,   rgba(31, 123, 255, 0.15) 0%, rgba(31, 123, 255, 0) 26vw);
 }
 
 img { max-width: 100%; height: auto; display: block; }
@@ -151,30 +168,31 @@ h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; margin: 0 0 0.6em;
 }
 
 /* ---------- Заставка с логотипом ---------- */
-/* Логотип отрисован на чёрном фоне, поэтому и секция чёрная — так картинка
-   не выглядит вставленным прямоугольником. svh вместо vh: на мобильных
-   адресная строка не должна обрезать экран. */
+/* Секция без своего фона — сквозь неё виден чёрный фон страницы и подсветка
+   по краям. svh вместо vh: на мобильных адресная строка не режет экран. */
 .intro {
   min-height: 100vh;
   min-height: 100svh;
-  background: #000;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 28px;
   padding: 24px 16px 40px;
   text-align: center;
 }
+/* mix-blend-mode: screen делает чёрный фон картинки полностью прозрачным,
+   поэтому логотип ложится на страницу без прямоугольника и без ореола. */
 .intro-logo {
   width: min(78vw, 460px); height: auto;
-  filter: drop-shadow(0 0 60px rgba(31, 123, 255, 0.35));
+  mix-blend-mode: screen;
 }
+/* Логотип и стрелка плавно тают по мере прокрутки; долю задаёт main.js */
+.intro-logo, .intro-scroll { --intro-fade: 1; opacity: var(--intro-fade); }
 .intro-scroll {
-  display: inline-flex; flex-direction: column; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
   color: var(--muted); text-decoration: none;
-  font-size: 0.86rem; letter-spacing: 0.14em; text-transform: uppercase;
-  min-height: 44px; padding: 6px 12px; border-radius: 8px;
+  min-height: 44px; min-width: 44px; border-radius: 50%;
 }
 .intro-scroll:hover { color: var(--ice); }
-.intro-scroll svg { width: 26px; height: 26px; animation: intro-bounce 1.8s ease-in-out infinite; }
+.intro-scroll svg { width: 30px; height: 30px; animation: intro-bounce 1.8s ease-in-out infinite; }
 @keyframes intro-bounce {
   0%, 100% { transform: translateY(0); opacity: 0.75; }
   50%      { transform: translateY(6px); opacity: 1; }

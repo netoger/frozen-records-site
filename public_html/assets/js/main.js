@@ -319,23 +319,33 @@
     var intro = $('#intro');
     if (!intro) { return; }
 
-    // Высоту читаем заранее: обращение к размерам элемента на каждом событии
-    // прокрутки заставляло бы браузер пересчитывать вёрстку
-    var halfIntro = intro.offsetHeight / 2;
+    var logo = $('.intro-logo');
+    var hint = $('.intro-scroll');
+    var lastFade = -1;
 
     function update() {
-      // Шапка возвращается, когда логотип ушёл больше чем наполовину
-      document.body.classList.toggle('at-intro', window.scrollY <= halfIntro);
-    }
+      var scrolled = window.scrollY;
+      // Заставка ровно в высоту экрана, поэтому меряем по окну: читать размеры
+      // элемента на каждой прокрутке дорого, а на старте они бывают неточными,
+      // пока не завершилась первая раскладка страницы
+      var screenHeight = window.innerHeight || 1;
 
-    function onResize() {
-      halfIntro = intro.offsetHeight / 2;
-      update();
+      // Шапка возвращается, когда логотип ушёл больше чем наполовину
+      document.body.classList.toggle('at-intro', scrolled <= screenHeight / 2);
+
+      // Плавный переход к содержимому: логотип и стрелка тают к концу заставки
+      var fade = Math.max(0, 1 - scrolled / (screenHeight * 0.8));
+      fade = Math.round(fade * 100) / 100;
+      if (fade !== lastFade) {
+        lastFade = fade;
+        if (logo) { logo.style.setProperty('--intro-fade', fade); }
+        if (hint) { hint.style.setProperty('--intro-fade', fade); }
+      }
     }
 
     update();
     window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', onResize, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
   }
 
   /* ------------------------------------------------------------

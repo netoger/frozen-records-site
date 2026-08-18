@@ -110,7 +110,6 @@ require_once __DIR__ . '/app/includes/layout/header.php';
          width="619" height="621" fetchpriority="high" decoding="async">
   </picture>
   <a class="intro-scroll" href="#hero" aria-label="Перейти к содержимому сайта">
-    <span>Листайте вниз</span>
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M12 4v14m0 0l-6-6m6 6l6-6" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

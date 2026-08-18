@@ -118,6 +118,14 @@ function init_schema(PDO $pdo): void
             created_at TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS bot_chats (       -- кто писал боту
+            chat_id    TEXT PRIMARY KEY,
+            username   TEXT NOT NULL DEFAULT '',     -- без @, в нижнем регистре
+            title      TEXT NOT NULL DEFAULT '',     -- имя для показа в логах
+            first_seen TEXT NOT NULL,
+            last_seen  TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS reminders_sent (  -- какие напоминания уже ушли
             booking_id INTEGER NOT NULL,
             kind       TEXT NOT NULL,               -- 'before' — перед сессией

@@ -6,7 +6,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/app/includes/staff.php';
 
 $pageTitle = 'Фрозен Рекордс — студия звукозаписи в Казани, запись круглосуточно';
-$pageDesc  = 'Студия звукозаписи в центре Казани: запись вокала от 1000 ₽/час, сведение, мастеринг, '
+$pageDesc  = 'Студия звукозаписи в центре Казани: запись вокала от 500 ₽/час, сведение, мастеринг, '
     . 'трек под ключ. Работаем круглосуточно, онлайн-запись на удобное время.';
 $canonical = BASE_URL . '/';
 $activeNav = 'home';
@@ -22,7 +22,7 @@ $jsonLd = [
     'image'     => BASE_URL . '/assets/img/og-cover.jpg',
     'telephone' => '+79503151420',
     'email'     => STUDIO_EMAIL,
-    'priceRange' => '1000–15000 ₽',
+    'priceRange' => '500–15000 ₽',
     'currenciesAccepted' => 'RUB',
     'address'   => [
         '@type'           => 'PostalAddress',
@@ -45,7 +45,10 @@ $jsonLd = [
     ],
     'sameAs' => [STUDIO_TELEGRAM],
 ];
-$extraHead = '<script type="application/ld+json">'
+// Логотип заставки грузим в первую очередь — он первое, что видит посетитель
+$extraHead = '<link rel="preload" as="image" href="' . e(asset('/assets/img/logo-main.webp'))
+    . '" type="image/webp">' . "\n"
+    . '<script type="application/ld+json">'
     . json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
     . '</script>';
 
@@ -53,8 +56,9 @@ $extraHead = '<script type="application/ld+json">'
 $priceCards = [
     [
         'title' => 'Запись вокала',
-        'items' => [['1 час', '1000 ₽'], ['2 часа', '1800 ₽'], ['3 часа', '2500 ₽']],
-        'note'  => 'Со звукорежиссёром, в стоимость входит экспорт дорожек.',
+        'items' => [['Час работы', 'от 500 ₽']],
+        'note'  => 'Со звукорежиссёром, в стоимость входит экспорт дорожек. '
+            . 'Итоговая ставка зависит от выбранного специалиста — смотрите раздел «Команда».',
     ],
     [
         'title' => 'Демо-сессия',
@@ -97,8 +101,25 @@ $gallery = [
 require_once __DIR__ . '/app/includes/layout/header.php';
 ?>
 
+<!-- Заставка: логотип на весь экран, сайт начинается ниже по прокрутке -->
+<section class="intro" id="intro" aria-label="Фрозен Рекордс">
+  <picture>
+    <source type="image/webp" srcset="/assets/img/logo-main.webp">
+    <img class="intro-logo" src="/assets/img/logo-main.jpg"
+         alt="Логотип студии звукозаписи Фрозен Рекордс"
+         width="619" height="621" fetchpriority="high" decoding="async">
+  </picture>
+  <a class="intro-scroll" href="#hero" aria-label="Перейти к содержимому сайта">
+    <span>Листайте вниз</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 4v14m0 0l-6-6m6 6l6-6" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+</section>
+
 <!-- Экран-приветствие -->
-<section class="hero" aria-label="Фрозен Рекордс — студия звукозаписи">
+<section class="hero" id="hero" aria-label="Фрозен Рекордс — студия звукозаписи">
   <div class="container hero-inner">
     <p class="hero-kicker">Студия звукозаписи · Казань</p>
     <h1 class="hero-title">Фрозен<br>Рекордс</h1>

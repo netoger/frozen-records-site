@@ -11,6 +11,79 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/notify.php';
 
+// ---------------------------------------------------------------
+// Кто есть кто: администраторы и посторонние
+// ---------------------------------------------------------------
+
+/**
+ * Логины администраторов из .env (TELEGRAM_ADMINS), без @ и в нижнем регистре.
+ * Telegram присылает в сообщении логин отправителя, поэтому права проверяются
+ * по нему: не нужно заранее знать chat_id каждого сотрудника.
+ * @return string[]
+ */
+function bot_admin_usernames(): array
+{
+    $raw = cfg('TELEGRAM_ADMINS');
+    if ($raw === '') {
+        return [];
+    }
+    $list = array_map(
+        static fn (string $u): string => mb_strtolower(trim(ltrim(trim($u), '@'))),
+        explode(',', $raw)
+    );
+    return array_values(array_filter($list, static fn (string $u): bool => $u !== ''));
+}
+
+/**
+ * Администратор ли отправитель.
+ * Логин — основной признак; chat_id из TELEGRAM_CHAT_ID оставлен как запасной,
+ * чтобы владелец не потерял доступ, если скроет логин в настройках Telegram.
+ */
+function bot_is_admin(string $username, string $chatId): bool
+{
+    $username = mb_strtolower(ltrim($username, '@'));
+    if ($username !== '' && in_array($username, bot_admin_usernames(), true)) {
+        return true;
+    }
+    $main = cfg('TELEGRAM_CHAT_ID');
+    return $main !== '' && $chatId === $main;
+}
+
+/** Запоминаем, кто писал боту: по этим чатам потом рассылаются уведомления */
+function bot_remember_chat(string $chatId, string $username, string $title): void
+{
+    db()->prepare(
+        "INSERT INTO bot_chats (chat_id, username, title, first_seen, last_seen)
+         VALUES (?, ?, ?, datetime('now','localtime'), datetime('now','localtime'))
+         ON CONFLICT(chat_id) DO UPDATE SET
+            username = excluded.username,
+            title = excluded.title,
+            last_seen = excluded.last_seen"
+    )->execute([$chatId, mb_strtolower(ltrim($username, '@')), $title]);
+}
+
+/**
+ * Чаты, куда уходят уведомления и напоминания: все администраторы,
+ * которые уже писали боту, плюс основной чат из настроек.
+ * @return string[]
+ */
+function bot_admin_chat_ids(): array
+{
+    $ids = [];
+    $admins = bot_admin_usernames();
+    if ($admins !== []) {
+        $in = implode(',', array_fill(0, count($admins), '?'));
+        $st = db()->prepare("SELECT chat_id FROM bot_chats WHERE username IN ({$in})");
+        $st->execute($admins);
+        $ids = $st->fetchAll(PDO::FETCH_COLUMN, 0);
+    }
+    $main = cfg('TELEGRAM_CHAT_ID');
+    if ($main !== '') {
+        $ids[] = $main;
+    }
+    return array_values(array_unique(array_map('strval', $ids)));
+}
+
 const BOT_BTN_TODAY    = 'Сегодня';
 const BOT_BTN_TOMORROW = 'Завтра';
 const BOT_BTN_WEEK     = 'Неделя';
@@ -97,11 +170,14 @@ function bot_free_report(int $days = 7): string
  * Ответ на входящее сообщение. Возвращает текст либо null, если отвечать не нужно.
  * $isManager — сообщение пришло из чата менеджера.
  */
-function bot_reply_for(string $text, bool $isManager): ?string
+function bot_reply_for(string $text, bool $isAdmin): ?string
 {
-    if (!$isManager) {
-        return 'Это служебный бот студии «Фрозен Рекордс». '
-            . 'Записаться на сессию можно на сайте: ' . BASE_URL . '/booking/';
+    // Посторонним не показываем ничего о записях студии — только вежливый ответ
+    if (!$isAdmin) {
+        return "Здравствуйте! Это служебный бот студии «Фрозен Рекордс», "
+            . "он отвечает только сотрудникам.\n\n"
+            . 'Записаться на сессию можно на сайте: ' . BASE_URL . "/booking/\n"
+            . 'Позвонить: ' . STUDIO_PHONE;
     }
 
     $text = trim($text);
@@ -122,12 +198,19 @@ function bot_reply_for(string $text, bool $isManager): ?string
             => bot_free_report(),
 
         str_starts_with($text, '/start'), str_starts_with($text, '/help')
-            => "Бот студии «Фрозен Рекордс».\n\n"
+            => "Бот студии «Фрозен Рекордс». Вы вошли как сотрудник.\n\n"
              . "Присылаю уведомления о новых заявках и напоминаю о сессиях "
              . 'за ' . REMINDER_HOURS_BEFORE . " ч до начала.\n\n"
              . "Кнопки внизу: «Сегодня», «Завтра», «Неделя», «Свободное время».\n\n"
              . "Персональных данных клиентов бот не показывает — имя и телефон "
              . 'смотрите в админке: ' . BASE_URL . '/admin/',
+
+        str_starts_with($text, '/who')
+            => "Сотрудники с доступом к боту: "
+             . (bot_admin_usernames() === []
+                 ? 'список пуст (настройка TELEGRAM_ADMINS в .env)'
+                 : '@' . implode(', @', bot_admin_usernames()))
+             . ".\nУведомления сейчас уходят в " . count(bot_admin_chat_ids()) . ' чат(ов).',
 
         default => 'Не понял команду. Пользуйтесь кнопками внизу или отправьте /help.',
     };
@@ -238,27 +321,32 @@ function bot_welcome_text(): string
  */
 function bot_handle_message(array $message): ?array
 {
-    $chatId = (string) ($message['chat']['id'] ?? '');
-    $text   = trim((string) ($message['text'] ?? ''));
+    $chatId   = (string) ($message['chat']['id'] ?? '');
+    $text     = trim((string) ($message['text'] ?? ''));
+    $username = (string) ($message['from']['username'] ?? '');
+    $title    = trim(((string) ($message['from']['first_name'] ?? '')) . ' '
+        . ((string) ($message['from']['last_name'] ?? '')));
     if ($chatId === '' || $text === '') {
         return null;
     }
 
-    $managerChat = cfg('TELEGRAM_CHAT_ID');
+    bot_remember_chat($chatId, $username, $title);
+    $isAdmin = bot_is_admin($username, $chatId);
 
-    if ($managerChat === '' && str_starts_with($text, '/start')) {
+    // Первый администратор, написавший /start, становится основным адресатом:
+    // на него настроены уведомления, если список чатов ещё пуст
+    if ($isAdmin && cfg('TELEGRAM_CHAT_ID') === '' && str_starts_with($text, '/start')) {
         bot_register_manager($chatId);
         return ['chat_id' => $chatId, 'text' => bot_welcome_text(), 'reply_markup' => bot_keyboard()];
     }
 
-    $isManager = $managerChat !== '' && $chatId === $managerChat;
-    $reply = bot_reply_for($text, $isManager);
+    $reply = bot_reply_for($text, $isAdmin);
     if ($reply === null) {
         return null;
     }
 
     return ['chat_id' => $chatId, 'text' => $reply]
-        + ($isManager ? ['reply_markup' => bot_keyboard()] : []);
+        + ($isAdmin ? ['reply_markup' => bot_keyboard()] : ['reply_markup' => ['remove_keyboard' => true]]);
 }
 
 /**

@@ -150,6 +150,55 @@ h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; margin: 0 0 0.6em;
   .nav-cta { margin-left: auto; }
 }
 
+/* ---------- Заставка с логотипом ---------- */
+/* Логотип отрисован на чёрном фоне, поэтому и секция чёрная — так картинка
+   не выглядит вставленным прямоугольником. svh вместо vh: на мобильных
+   адресная строка не должна обрезать экран. */
+.intro {
+  min-height: 100vh;
+  min-height: 100svh;
+  background: #000;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 28px;
+  padding: 24px 16px 40px;
+  text-align: center;
+}
+.intro-logo {
+  width: min(78vw, 460px); height: auto;
+  filter: drop-shadow(0 0 60px rgba(31, 123, 255, 0.35));
+}
+.intro-scroll {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--muted); text-decoration: none;
+  font-size: 0.86rem; letter-spacing: 0.14em; text-transform: uppercase;
+  min-height: 44px; padding: 6px 12px; border-radius: 8px;
+}
+.intro-scroll:hover { color: var(--ice); }
+.intro-scroll svg { width: 26px; height: 26px; animation: intro-bounce 1.8s ease-in-out infinite; }
+@keyframes intro-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.75; }
+  50%      { transform: translateY(6px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-scroll svg { animation: none; }
+}
+
+/* Пока видна заставка, шапка не перекрывает логотип. Класс ставит main.js;
+   без JS шапка просто остаётся обычной — сайт от этого не ломается. */
+body.at-intro .site-header {
+  background: transparent;
+  border-bottom-color: transparent;
+  backdrop-filter: none;
+}
+body.at-intro .site-header .nav-links,
+body.at-intro .site-header .nav-cta { opacity: 0; pointer-events: none; }
+.site-header, .site-header .nav-links, .site-header .nav-cta {
+  transition: opacity 0.25s, background 0.25s, border-color 0.25s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header, .site-header .nav-links, .site-header .nav-cta { transition: none; }
+}
+
 /* ---------- Hero ---------- */
 .hero {
   position: relative;

@@ -97,8 +97,10 @@ function flush_queues(): void
         queue_retry(QUEUE_MAIL, static fn (array $i): bool
             => send_manager_email($i['subject'] ?? '(без темы)', $i['body'] ?? '', false), 5);
 
+        // Адресат хранится в самом задании: у сообщений из старых версий
+        // очереди его нет — такие отправляем основному чату
         queue_retry(QUEUE_TELEGRAM, static fn (array $i): bool
-            => send_manager_telegram($i['text'] ?? '', false, true), 36);
+            => telegram_send_to((string) ($i['chat_id'] ?? cfg('TELEGRAM_CHAT_ID')), $i['text'] ?? '', true), 36);
     } finally {
         flock($lock, LOCK_UN);
         fclose($lock);
@@ -213,16 +215,14 @@ function telegram_request(string $method, array $params, int $maxTries, int $tim
     return null;
 }
 
-function send_manager_telegram(string $text, bool $queueOnFail = true, bool $thorough = false): bool
+/** Отправка одному чату. true — Telegram принял сообщение. */
+function telegram_send_to(string $chatId, string $text, bool $thorough = false): bool
 {
-    $chatId = cfg('TELEGRAM_CHAT_ID');
     if (cfg('TELEGRAM_BOT_TOKEN') === '' || $chatId === '') {
-        log_app('notice', 'Telegram: токен или chat_id не заданы, уведомление пропущено');
         return false;
     }
-
     try {
-        // При бронировании — 2 быстрые попытки (клиент ждёт ответа),
+        // При бронировании — быстрые попытки (клиент ждёт ответа),
         // из очереди по cron — весь список адресов с большим таймаутом
         $body = $thorough
             ? telegram_request('sendMessage', ['chat_id' => $chatId, 'text' => $text], 5, 6, 2)
@@ -232,14 +232,34 @@ function send_manager_telegram(string $text, bool $queueOnFail = true, bool $tho
             return true;
         }
         if ($body !== null) {
-            log_app('warning', 'Telegram ответил отказом — проверьте токен и chat_id');
+            log_app('warning', 'Telegram отклонил отправку в чат — проверьте токен и права бота');
         }
     } catch (Throwable $e) {
         log_app('warning', 'Telegram: ' . $e->getMessage());
     }
-
-    if ($queueOnFail) {
-        queue_push(QUEUE_TELEGRAM, ['text' => $text]);
-    }
     return false;
+}
+
+/**
+ * Уведомление всем администраторам студии.
+ * Не доставленное каждому конкретному чату уходит в очередь по отдельности,
+ * поэтому сбой связи с одним получателем не лишает сообщения остальных.
+ */
+function send_manager_telegram(string $text, bool $queueOnFail = true, bool $thorough = false): bool
+{
+    $recipients = bot_admin_chat_ids();
+    if ($recipients === []) {
+        log_app('notice', 'Telegram: нет ни одного администратора, уведомление пропущено');
+        return false;
+    }
+
+    $delivered = false;
+    foreach ($recipients as $chatId) {
+        if (telegram_send_to($chatId, $text, $thorough)) {
+            $delivered = true;
+        } elseif ($queueOnFail) {
+            queue_push(QUEUE_TELEGRAM, ['chat_id' => $chatId, 'text' => $text]);
+        }
+    }
+    return $delivered;
 }

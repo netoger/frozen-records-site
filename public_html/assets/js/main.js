@@ -312,6 +312,33 @@
   }
 
   /* ------------------------------------------------------------
+     Заставка: пока логотип на экране, шапка не перекрывает его.
+     Без этого скрипта сайт работает так же, просто шапка видна сразу.
+     ------------------------------------------------------------ */
+  function initIntro() {
+    var intro = $('#intro');
+    if (!intro) { return; }
+
+    // Высоту читаем заранее: обращение к размерам элемента на каждом событии
+    // прокрутки заставляло бы браузер пересчитывать вёрстку
+    var halfIntro = intro.offsetHeight / 2;
+
+    function update() {
+      // Шапка возвращается, когда логотип ушёл больше чем наполовину
+      document.body.classList.toggle('at-intro', window.scrollY <= halfIntro);
+    }
+
+    function onResize() {
+      halfIntro = intro.offsetHeight / 2;
+      update();
+    }
+
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
+  }
+
+  /* ------------------------------------------------------------
      Яндекс.Карта в блоке «Как добраться» — только если задан ключ.
      API грузится с api-maps.yandex.ru (домен разрешён политикой проекта).
      ------------------------------------------------------------ */
@@ -353,6 +380,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    initIntro();
     initCookieBanner();
     initBooking();
     initPhoneField();

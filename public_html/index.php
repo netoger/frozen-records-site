@@ -10,6 +10,9 @@ $pageDesc  = 'Студия звукозаписи в центре Казани: 
     . 'трек под ключ. Работаем круглосуточно, онлайн-запись на удобное время.';
 $canonical = BASE_URL . '/';
 $activeNav = 'home';
+// Класс проставляем сразу в разметке: если ждать скрипт, шапка успевает
+// мигнуть поверх заставки при загрузке страницы
+$bodyClass = 'at-intro';
 
 // JSON-LD schema.org LocalBusiness
 $jsonLd = [
@@ -107,7 +110,7 @@ require_once __DIR__ . '/app/includes/layout/header.php';
     <source type="image/webp" srcset="/assets/img/logo-main.webp">
     <img class="intro-logo" src="/assets/img/logo-main.jpg"
          alt="Логотип студии звукозаписи Фрозен Рекордс"
-         width="619" height="621" fetchpriority="high" decoding="async">
+         width="1050" height="692" fetchpriority="high" decoding="async">
   </picture>
   <a class="intro-scroll" href="#hero" aria-label="Перейти к содержимому сайта">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -306,11 +309,7 @@ require_once __DIR__ . '/app/includes/layout/header.php';
            role="img" aria-label="Карта: <?= e(STUDIO_ADDRESS) ?>"></div>
       <?php else: ?>
       <div class="route-map route-map-stub" aria-hidden="true">
-        <svg viewBox="0 0 512 512" class="stub-mark" focusable="false">
-          <g fill="currentColor"><polygon points="256,40 368,256 256,472 144,256"/>
-          <polygon points="96,44 142,128 96,212 50,128"/><polygon points="416,44 462,128 416,212 370,128"/>
-          <polygon points="96,300 142,384 96,468 50,384"/><polygon points="416,300 462,384 416,468 370,384"/></g>
-        </svg>
+        <img class="stub-mark" src="/assets/img/mark.png" alt="" width="56" height="56" loading="lazy" decoding="async">
         <p>Интерактивная карта появится после подключения ключа Яндекс.Карт<br>(см. .env.example)</p>
       </div>
       <?php endif; ?>

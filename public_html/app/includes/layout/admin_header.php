@@ -11,7 +11,7 @@ require_once dirname(__DIR__) . '/auth.php';
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title><?= e($adminTitle ?? 'Админка') ?> — Фрозен Рекордс</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="<?= e(asset('/assets/css/style.css')) ?>">
 </head>
 <body class="admin-body">

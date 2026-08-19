@@ -72,19 +72,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Подсветка по боковым краям страницы: сверху и снизу её нет.
-   Слой закреплён на экране и лежит ПОЗАДИ содержимого (z-index: -1),
-   поэтому не затемняет текст и не перехватывает нажатия. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(to right, rgba(31, 123, 255, 0.09) 0%, rgba(31, 123, 255, 0) 22vw),
-    linear-gradient(to left,  rgba(31, 123, 255, 0.09) 0%, rgba(31, 123, 255, 0) 22vw);
-}
 
 img { max-width: 100%; height: auto; display: block; }
 
@@ -173,14 +160,21 @@ h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; margin: 0 0 0.6em;
   min-height: 100vh;
   min-height: 100svh;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 28px;
-  padding: 24px 16px 40px;
+  align-items: center; justify-content: center; gap: 12px;
+  padding: 16px 8px 24px;
   text-align: center;
 }
-/* mix-blend-mode: screen делает чёрный фон картинки полностью прозрачным,
-   поэтому логотип ложится на страницу без прямоугольника и без ореола. */
+/* Логотип занимает почти весь экран. Ограничение по высоте нужно, чтобы
+   на широких мониторах он не вылезал за пределы окна и стрелка оставалась видна.
+   mix-blend-mode: screen делает чёрный фон картинки прозрачным, поэтому
+   изображение ложится на страницу без прямоугольника и без ореола. */
+/* Логотип шире, чем выше (соотношение ≈ 1,52), поэтому вторым ограничителем
+   идёт высота экрана, пересчитанная в ширину: 80svh × 1,52 ≈ 121svh.
+   Так картинка всегда влезает целиком и не остаётся пустых полей по бокам,
+   которые появились бы при object-fit. */
 .intro-logo {
-  width: min(78vw, 460px); height: auto;
+  width: min(94vw, 121svh);
+  height: auto;
   mix-blend-mode: screen;
 }
 /* Логотип и стрелка плавно тают по мере прокрутки; долю задаёт main.js */
@@ -200,20 +194,16 @@ h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; margin: 0 0 0.6em;
   .intro-scroll svg { animation: none; }
 }
 
-/* Пока видна заставка, шапка не перекрывает логотип. Класс ставит main.js;
-   без JS шапка просто остаётся обычной — сайт от этого не ломается. */
+/* Пока видна заставка, шапки нет совсем: название студии появляется вместе
+   с кнопками меню, когда посетитель прокручивает страницу к содержимому.
+   Класс ставит main.js; без JS шапка просто видна сразу — сайт не ломается. */
 body.at-intro .site-header {
-  background: transparent;
-  border-bottom-color: transparent;
-  backdrop-filter: none;
+  opacity: 0;
+  pointer-events: none;
 }
-body.at-intro .site-header .nav-links,
-body.at-intro .site-header .nav-cta { opacity: 0; pointer-events: none; }
-.site-header, .site-header .nav-links, .site-header .nav-cta {
-  transition: opacity 0.25s, background 0.25s, border-color 0.25s;
-}
+.site-header { transition: opacity 0.3s ease; }
 @media (prefers-reduced-motion: reduce) {
-  .site-header, .site-header .nav-links, .site-header .nav-cta { transition: none; }
+  .site-header { transition: none; }
 }
 
 /* ---------- Hero ---------- */

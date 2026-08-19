@@ -61,6 +61,18 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
       </div>
       <?php endif; ?>
 
+      <h2 class="booking-step"><?= ++$step ?>. Сколько часов нужно</h2>
+      <div class="hours-picker" id="hours-picker" role="group" aria-label="Длительность сессии">
+        <?php for ($h = 1; $h <= MAX_BOOKING_HOURS; $h++): ?>
+        <button type="button" class="hours-btn" data-hours="<?= $h ?>"
+                aria-pressed="<?= $h === 1 ? 'true' : 'false' ?>">
+          <?= $h ?> <?= $h === 1 ? 'час' : ($h < 5 ? 'часа' : 'часов') ?>
+        </button>
+        <?php endfor; ?>
+      </div>
+      <p class="field-hint hours-hint">Показываем только то время, с которого свободно
+        нужное количество часов подряд.</p>
+
       <h2 class="booking-step"><?= ++$step ?>. Выберите день</h2>
       <div class="date-strip" id="date-strip" role="group" aria-label="Дни для записи"></div>
 
@@ -125,7 +137,10 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
         <p id="success-details"></p>
         <p>Менеджер свяжется с вами для подтверждения. Если что-то срочное —
           звоните: <a href="<?= e(STUDIO_PHONE_HREF) ?>"><?= e(STUDIO_PHONE) ?></a>.</p>
-        <p><a class="btn btn-ghost" href="/">Вернуться на главную</a></p>
+        <p class="success-actions">
+          <a class="btn btn-ghost" href="/booking/">Записаться ещё раз</a>
+          <a class="btn btn-ghost" href="/">На главную</a>
+        </p>
       </div>
 
     </div>

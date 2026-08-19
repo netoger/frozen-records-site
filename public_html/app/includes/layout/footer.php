@@ -17,6 +17,7 @@
         <li><a href="/privacy.html">Политика обработки персональных данных</a></li>
         <li><a href="/consent.html">Согласие на обработку персональных данных</a></li>
         <li><a href="/rules.html">Правила оказания услуг</a></li>
+        <li><button type="button" class="link-button" id="cookie-settings">Настройки cookie</button></li>
       </ul>
     </section>
     <section class="footer-col" aria-label="Реквизиты">

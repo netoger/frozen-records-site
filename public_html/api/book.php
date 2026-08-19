@@ -68,6 +68,11 @@ if ($master !== '' && staff_find($master) === null) {
     $master = '';
 }
 
+$hours = (int) ($_POST['hours'] ?? 1);
+if ($hours < 1 || $hours > MAX_BOOKING_HOURS) {
+    json_out(['error' => 'Выберите длительность от 1 до ' . MAX_BOOKING_HOURS . ' часов.', 'code' => 'validation'], 400);
+}
+
 $pdo = db();
 $slotTakenMsg = 'Этот слот только что заняли, выберите другой.';
 
@@ -91,27 +96,53 @@ try {
         json_out(['error' => $slotTakenMsg, 'code' => 'slot_taken'], 409);
     }
 
-    $ins = $pdo->prepare(
-        "INSERT INTO bookings (slot_id, slot_date, slot_time, master, name, phone, comment, consent_at, ip, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, 'new')"
+    // Сессия на несколько часов занимает подряд идущие слоты того же дня.
+    // Берём их одним запросом внутри транзакции: если хоть один занят или
+    // цепочка прерывается, бронь не создаётся вовсе.
+    $need = $pdo->prepare(
+        "SELECT id, time_start, time_end, status FROM slots
+          WHERE date = ? AND time_start >= ? ORDER BY time_start LIMIT ?"
     );
-    $ins->execute([
-        $slotId,
-        $slot['date'],
-        $slot['time_start'] . '–' . $slot['time_end'],
-        $master,
-        $name,
-        $phone,
-        $comment,
-        $ip,
-    ]);
+    $need->execute([$slot['date'], $slot['time_start'], $hours]);
+    $chain = $need->fetchAll();
+
+    $expected = strtotime($slot['date'] . ' ' . $slot['time_start']);
+    foreach ($chain as $link) {
+        if ($link['status'] !== 'free' || strtotime($slot['date'] . ' ' . $link['time_start']) !== $expected) {
+            $chain = [];
+            break;
+        }
+        $expected += 3600;
+    }
+
+    if (count($chain) !== $hours) {
+        $pdo->exec('ROLLBACK');
+        json_out([
+            'error' => $hours === 1
+                ? $slotTakenMsg
+                : 'Подряд идущих свободных часов не хватает — выберите другое время или меньшую длительность.',
+            'code'  => 'slot_taken',
+        ], 409);
+    }
+
+    $timeLabel = $slot['time_start'] . '–' . $chain[count($chain) - 1]['time_end'];
+
+    $ins = $pdo->prepare(
+        "INSERT INTO bookings (slot_id, slot_date, slot_time, master, hours, name, phone, comment, consent_at, ip, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'), ?, 'new')"
+    );
+    $ins->execute([$slotId, $slot['date'], $timeLabel, $master, $hours, $name, $phone, $comment, $ip]);
     $bookingId = (int) $pdo->lastInsertId();
 
-    $upd = $pdo->prepare("UPDATE slots SET status = 'booked' WHERE id = ? AND status = 'free'");
-    $upd->execute([$slotId]);
-    if ($upd->rowCount() !== 1) {
-        $pdo->exec('ROLLBACK');
-        json_out(['error' => $slotTakenMsg, 'code' => 'slot_taken'], 409);
+    $link = $pdo->prepare('INSERT INTO booking_slots (booking_id, slot_id) VALUES (?, ?)');
+    $upd  = $pdo->prepare("UPDATE slots SET status = 'booked' WHERE id = ? AND status = 'free'");
+    foreach ($chain as $row) {
+        $link->execute([$bookingId, (int) $row['id']]);
+        $upd->execute([(int) $row['id']]);
+        if ($upd->rowCount() !== 1) {
+            $pdo->exec('ROLLBACK');
+            json_out(['error' => $slotTakenMsg, 'code' => 'slot_taken'], 409);
+        }
     }
 
     $pdo->exec('COMMIT');
@@ -130,11 +161,12 @@ try {
 rate_limit_add($ip);
 
 // Уведомления после коммита: их сбой не отменяет бронь
-notify_new_booking($bookingId, $slot['date'], $slot['time_start'] . '–' . $slot['time_end'], $master);
+notify_new_booking($bookingId, $slot['date'], $timeLabel, $master);
 
 json_out([
     'ok'          => true,
     'booking_id'  => $bookingId,
     'master_name' => $master === '' ? '' : staff_name($master),
-    'slot'        => ['date' => $slot['date'], 'time' => $slot['time_start'] . '–' . $slot['time_end']],
+    'hours'       => $hours,
+    'slot'        => ['date' => $slot['date'], 'time' => $timeLabel],
 ]);

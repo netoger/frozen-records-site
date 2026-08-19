@@ -48,15 +48,16 @@ $st = $pdo->prepare('SELECT * FROM slots WHERE date = ? ORDER BY time_start');
 $st->execute([$day]);
 $slots = $st->fetchAll();
 
-// Номера заявок для занятых слотов
+// Номера заявок для занятых слотов. Смотрим booking_slots: сессия на несколько
+// часов занимает подряд идущие слоты, и у средних нет прямой ссылки в bookings.
 $bookingBySlot = [];
 if ($slots !== []) {
     $ids = array_column($slots, 'id');
     $in  = implode(',', array_fill(0, count($ids), '?'));
-    $bs  = $pdo->prepare("SELECT id, slot_id FROM bookings WHERE slot_id IN ({$in})");
+    $bs  = $pdo->prepare("SELECT booking_id, slot_id FROM booking_slots WHERE slot_id IN ({$in})");
     $bs->execute($ids);
     foreach ($bs as $row) {
-        $bookingBySlot[(int) $row['slot_id']] = (int) $row['id'];
+        $bookingBySlot[(int) $row['slot_id']] = (int) $row['booking_id'];
     }
 }
 

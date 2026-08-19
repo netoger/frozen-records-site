@@ -8,6 +8,10 @@
 Options -Indexes
 AddDefaultCharset utf-8
 
+# Свои страницы ошибок вместо стандартных страниц хостинга
+ErrorDocument 404 /error.php
+ErrorDocument 403 /error.php
+
 # --- Принудительный HTTPS ---
 <IfModule mod_rewrite.c>
 RewriteEngine On

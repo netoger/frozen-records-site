@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/smtp.php';
+require_once __DIR__ . '/admins.php';
 require_once __DIR__ . '/staff.php';
 
 const QUEUE_MAIL     = 'mail_queue';

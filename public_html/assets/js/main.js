@@ -37,13 +37,7 @@
   function initCookieBanner() {
     var banner = $('#cookie-banner');
     if (!banner) { return; }
-    var choice = null;
-    try { choice = localStorage.getItem(CONSENT_KEY); } catch (e) { /* приватный режим */ }
 
-    if (choice === 'accepted') { loadMetrika(); return; }
-    if (choice === 'declined') { return; }
-
-    banner.hidden = false;
     $('#cookie-accept').addEventListener('click', function () {
       try { localStorage.setItem(CONSENT_KEY, 'accepted'); } catch (e) {}
       banner.hidden = true;
@@ -53,6 +47,27 @@
       try { localStorage.setItem(CONSENT_KEY, 'declined'); } catch (e) {}
       banner.hidden = true;
     });
+
+    // Ссылка в подвале: посетитель может передумать и изменить решение,
+    // не разбираясь в настройках браузера. Метрика включится только заново,
+    // после явного согласия — уже загруженная в этой вкладке не выключится,
+    // поэтому после отказа перезагружаем страницу.
+    var settings = $('#cookie-settings');
+    if (settings) {
+      settings.addEventListener('click', function () {
+        try { localStorage.removeItem(CONSENT_KEY); } catch (e) {}
+        banner.hidden = false;
+        banner.scrollIntoView({ block: 'center' });
+      });
+    }
+
+    var choice = null;
+    try { choice = localStorage.getItem(CONSENT_KEY); } catch (e) { /* приватный режим */ }
+
+    if (choice === 'accepted') { loadMetrika(); return; }
+    if (choice === 'declined') { return; }
+
+    banner.hidden = false;
   }
 
   /* ------------------------------------------------------------
@@ -88,6 +103,31 @@
     var days = {};          // date -> [{id, time_start, time_end}]
     var selectedDate = null;
     var selectedSlot = null; // {id, date, time}
+    var hours = 1;
+
+    // Начало сессии годится, только если следом идёт нужное число свободных
+    // часов подряд: иначе клиент выбрал бы время, а бронь сорвалась бы на сервере
+    function slotsWithRoom(list) {
+      if (hours <= 1) { return list; }
+      return list.filter(function (slot, i) {
+        for (var step = 1; step < hours; step++) {
+          var next = list[i + step];
+          if (!next || next.time_start !== nextHour(list[i + step - 1].time_start)) { return false; }
+        }
+        return true;
+      });
+    }
+
+    function nextHour(time) {
+      var h = (parseInt(time.slice(0, 2), 10) + 1) % 24;
+      return (h < 10 ? '0' : '') + h + ':00';
+    }
+
+    // Конец сессии для подписи: начало плюс выбранное число часов
+    function sessionEnd(startTime) {
+      var h = (parseInt(startTime.slice(0, 2), 10) + hours) % 24;
+      return (h < 10 ? '0' : '') + h + ':00';
+    }
 
     function showMessage(text, isOk) {
       msgEl.textContent = text;
@@ -113,23 +153,48 @@
 
     function renderSlots() {
       gridEl.innerHTML = '';
-      var list = days[selectedDate] || [];
+      var list = slotsWithRoom(days[selectedDate] || []);
       emptyEl.hidden = list.length !== 0;
+      emptyEl.textContent = hours > 1
+        ? 'На этот день нет ' + hours + ' свободных часов подряд — выберите другой день или меньшую длительность.'
+        : 'На этот день свободных слотов нет — загляните в соседние дни.';
       list.forEach(function (slot) {
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'slot-btn';
         b.textContent = slot.time_start;
-        b.setAttribute('aria-label', 'Время ' + slot.time_start + '–' + slot.time_end);
+        b.setAttribute('aria-label', 'Начало в ' + slot.time_start + ', до ' + sessionEnd(slot.time_start));
         var isSelected = selectedSlot && selectedSlot.id === slot.id;
         b.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
         b.addEventListener('click', function () {
-          selectedSlot = { id: slot.id, date: selectedDate, time: slot.time_start + '–' + slot.time_end };
+          selectedSlot = {
+            id: slot.id, date: selectedDate,
+            time: slot.time_start + '–' + sessionEnd(slot.time_start)
+          };
           hideMessage();
           renderSlots();
           renderChosen();
         });
         gridEl.appendChild(b);
+      });
+    }
+
+    function initHoursPicker() {
+      var picker = $('#hours-picker');
+      if (!picker) { return; }
+      picker.addEventListener('click', function (ev) {
+        var btn = ev.target.closest('.hours-btn');
+        if (!btn) { return; }
+        hours = parseInt(btn.dataset.hours, 10) || 1;
+        Array.prototype.forEach.call(picker.querySelectorAll('.hours-btn'), function (b) {
+          b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+        });
+        // Выбранное время могло перестать подходить под новую длительность
+        selectedSlot = null;
+        hideMessage();
+        renderDates(isoDate(new Date()));
+        renderSlots();
+        renderChosen();
       });
     }
 
@@ -144,10 +209,10 @@
         b.type = 'button';
         b.className = 'date-btn';
         b.dataset.date = iso;
-        var free = (days[iso] || []).length;
+        var free = slotsWithRoom(days[iso] || []).length;
         b.innerHTML = '<span class="d-num">' + d.getDate() + '</span>' +
           '<span class="d-wd">' + WEEKDAYS[d.getDay()] + '</span>';
-        b.setAttribute('aria-label', humanDate(iso) + ', свободно слотов: ' + free);
+        b.setAttribute('aria-label', humanDate(iso) + ', подходящих вариантов: ' + free);
         b.setAttribute('aria-pressed', iso === selectedDate ? 'true' : 'false');
         if (!free) { b.disabled = true; }
         b.addEventListener('click', function () {
@@ -184,6 +249,7 @@
         });
     }
 
+    initHoursPicker();
     consentEl.addEventListener('change', updateSubmitState);
 
     form.addEventListener('submit', function (ev) {
@@ -216,6 +282,7 @@
       // добавляем его к данным вручную
       var masterEl = $('#bf-master');
       if (masterEl) { payload.append('master', masterEl.value); }
+      payload.append('hours', String(hours));
 
       fetch('/api/book.php', {
         method: 'POST',
@@ -230,9 +297,12 @@
             var withMaster = res.body.master_name
               ? ' Специалист: ' + res.body.master_name + '.'
               : '';
+            var length = (res.body.hours || 1) > 1
+              ? ' на ' + res.body.hours + ' ч'
+              : '';
             $('#success-details').textContent =
               'Ждём вас ' + humanDate(selectedSlot.date) + ' в ' + selectedSlot.time.split('–')[0] +
-              '. Номер заявки — ' + res.body.booking_id + '.' + withMaster;
+              length + '. Номер заявки — ' + res.body.booking_id + '.' + withMaster;
             $('#booking-success').scrollIntoView({ block: 'center' });
             return;
           }

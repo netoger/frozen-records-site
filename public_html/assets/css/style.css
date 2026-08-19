@@ -72,7 +72,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Подсветка по краям страницы: сверху и с боков, снизу её нет.
+/* Подсветка по боковым краям страницы: сверху и снизу её нет.
    Слой закреплён на экране и лежит ПОЗАДИ содержимого (z-index: -1),
    поэтому не затемняет текст и не перехватывает нажатия. */
 body::before {
@@ -82,9 +82,8 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    linear-gradient(to bottom, rgba(31, 123, 255, 0.20) 0%, rgba(31, 123, 255, 0) 34vh),
-    linear-gradient(to right,  rgba(31, 123, 255, 0.15) 0%, rgba(31, 123, 255, 0) 26vw),
-    linear-gradient(to left,   rgba(31, 123, 255, 0.15) 0%, rgba(31, 123, 255, 0) 26vw);
+    linear-gradient(to right, rgba(31, 123, 255, 0.09) 0%, rgba(31, 123, 255, 0) 22vw),
+    linear-gradient(to left,  rgba(31, 123, 255, 0.09) 0%, rgba(31, 123, 255, 0) 22vw);
 }
 
 img { max-width: 100%; height: auto; display: block; }
@@ -381,6 +380,13 @@ a.contact-card:hover { border-color: var(--accent-soft); color: var(--text); }
 }
 .footer-title { font-size: 1rem; margin-bottom: 12px; color: var(--ice); }
 .footer-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+/* Кнопка, выглядящая ссылкой: это действие, а не переход, поэтому button */
+.link-button {
+  background: none; border: 0; padding: 0;
+  color: var(--accent-soft); font: inherit; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.link-button:hover { color: var(--ice); }
 .footer-fine { color: var(--muted); font-size: 0.88rem; }
 .footer-col p { margin: 0 0 10px; }
 .footer-col a { line-height: 1.9; }
@@ -405,6 +411,19 @@ a.contact-card:hover { border-color: var(--accent-soft); color: var(--text); }
 .booking-container { max-width: 760px; }
 .booking-intro { margin-bottom: 26px; }
 .booking-step { font-size: 1.05rem; margin: 30px 0 14px; color: var(--ice); }
+
+.hours-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.hours-btn {
+  min-height: 44px; padding: 8px 18px; border-radius: 10px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line);
+  font: 500 0.98rem var(--font-body); cursor: pointer;
+}
+.hours-btn:hover { border-color: var(--accent-soft); }
+.hours-btn[aria-pressed="true"] {
+  background: var(--accent-deep); border-color: var(--accent-deep); color: #fff;
+}
+.hours-hint { margin: 8px 0 0; }
 
 .date-strip {
   display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;
@@ -493,6 +512,16 @@ a.contact-card:hover { border-color: var(--accent-soft); color: var(--text); }
   border-radius: var(--radius); padding: 26px; margin-top: 20px;
 }
 .success-panel h2 { color: var(--ok); }
+.success-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Страница ошибки ---------- */
+.error-page { max-width: 40em; padding-top: 40px; }
+.error-code {
+  font: 700 clamp(3rem, 14vw, 6rem) var(--font-head);
+  line-height: 1; margin: 0 0 8px; color: var(--accent);
+  opacity: 0.55;
+}
+.error-actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 24px 0; }
 
 /* ---------- Юридические страницы ---------- */
 .legal { max-width: 48em; }

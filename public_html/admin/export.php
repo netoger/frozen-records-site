@@ -29,7 +29,7 @@ if ($fTo !== '')     { $where[] = 'slot_date <= ?'; $params[] = $fTo; }
 if ($fStatus !== '') { $where[] = 'status = ?';     $params[] = $fStatus; }
 
 $st = db()->prepare(
-    'SELECT id, created_at, slot_date, slot_time, master, name, phone, comment, status, consent_at, ip FROM bookings'
+    'SELECT id, created_at, slot_date, slot_time, hours, master, name, phone, comment, status, consent_at, ip FROM bookings'
     . ($where === [] ? '' : ' WHERE ' . implode(' AND ', $where))
     . ' ORDER BY created_at DESC'
 );
@@ -41,11 +41,12 @@ header('Cache-Control: no-store');
 
 $out = fopen('php://output', 'w');
 fwrite($out, "\xEF\xBB\xBF"); // BOM, чтобы Excel понял UTF-8
-fputcsv($out, ['№', 'Создана', 'Дата слота', 'Время', 'Специалист', 'Имя', 'Телефон',
+fputcsv($out, ['№', 'Создана', 'Дата слота', 'Время', 'Часов', 'Специалист', 'Имя', 'Телефон',
     'Комментарий', 'Статус', 'Согласие дано', 'IP'], ';');
 foreach ($st as $row) {
     fputcsv($out, [
         $row['id'], $row['created_at'], $row['slot_date'], $row['slot_time'],
+        (int) ($row['hours'] ?? 1),
         staff_name((string) ($row['master'] ?? '')),
         $row['name'], $row['phone'], $row['comment'], $row['status'],
         $row['consent_at'], $row['ip'],

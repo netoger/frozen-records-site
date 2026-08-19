@@ -36,6 +36,9 @@ define('BOOKING_HORIZON_DAYS', max(1, (int) cfg('BOOKING_HORIZON_DAYS', '14')));
 define('RATE_LIMIT_PER_HOUR', max(1, (int) cfg('RATE_LIMIT_PER_HOUR', '3')));
 define('RETENTION_MONTHS', max(1, (int) cfg('RETENTION_MONTHS', '12')));
 define('REMINDER_HOURS_BEFORE', max(1, (int) cfg('REMINDER_HOURS_BEFORE', '2')));
+// Максимальная длительность одной брони: столько подряд идущих часов
+// клиент может занять через сайт
+define('MAX_BOOKING_HOURS', min(12, max(1, (int) cfg('MAX_BOOKING_HOURS', '4'))));
 
 // --- публичные реквизиты (не секреты, поэтому в коде) ---
 const COMPANY_NAME          = 'ООО «ФРОЗЕН РЕКОРДС»';
@@ -98,6 +101,7 @@ function init_schema(PDO $pdo): void
             slot_date  TEXT NOT NULL,
             slot_time  TEXT NOT NULL,
             master     TEXT NOT NULL DEFAULT '',   -- id специалиста из staff.json, пусто = любой
+            hours      INTEGER NOT NULL DEFAULT 1, -- длительность сессии в часах
             name       TEXT NOT NULL,
             phone      TEXT NOT NULL,               -- нормализован: +7XXXXXXXXXX
             comment    TEXT NOT NULL DEFAULT '',
@@ -106,6 +110,13 @@ function init_schema(PDO $pdo): void
             status     TEXT NOT NULL DEFAULT 'new'
                        CHECK (status IN ('new','confirmed','cancelled')),
             created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+        );
+
+        -- Сессия длиннее часа занимает несколько подряд идущих слотов.
+        -- UNIQUE по slot_id гарантирует, что один слот не уйдёт двум заявкам.
+        CREATE TABLE IF NOT EXISTS booking_slots (
+            booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+            slot_id    INTEGER NOT NULL UNIQUE REFERENCES slots(id)
         );
 
         CREATE TABLE IF NOT EXISTS rate_limit (      -- антиспам: заявки с IP
@@ -159,8 +170,23 @@ function migrate_schema(PDO $pdo): void
         }
     }
 
+    if (!in_array('hours', $columns, true)) {
+        $pdo->exec('ALTER TABLE bookings ADD COLUMN hours INTEGER NOT NULL DEFAULT 1');
+        if (function_exists('log_app')) {
+            log_app('info', 'Схема БД: добавлен столбец bookings.hours');
+        }
+    }
+
+    // Заявки, созданные до появления booking_slots, привязываем к своему слоту,
+    // чтобы отмена одинаково освобождала время у старых и новых записей
+    $pdo->exec(
+        'INSERT OR IGNORE INTO booking_slots (booking_id, slot_id)
+         SELECT id, slot_id FROM bookings WHERE slot_id IS NOT NULL'
+    );
+
     // Индексы по добавленным столбцам создаём только здесь, после ALTER TABLE:
     // в общем блоке CREATE они выполнились бы раньше появления столбца
     // и обрушили бы каждый запрос к сайту на уже существующей базе.
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_bookings_master ON bookings (master)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_booking_slots_booking ON booking_slots (booking_id)');
 }

@@ -12,6 +12,7 @@ $metrikaId = preg_replace('/\D/', '', cfg('METRIKA_ID'));
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#000000">
 <title><?= e($pageTitle) ?></title>
 <meta name="description" content="<?= e($pageDesc) ?>">
 <link rel="canonical" href="<?= e($canonical) ?>">

@@ -28,18 +28,28 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $id  = (int) ($_POST['id'] ?? 0);
     $act = (string) ($_POST['act'] ?? '');
 
+    // Сессия может занимать несколько часов подряд, поэтому освобождаем все
+    // связанные слоты, а не только тот, с которого началась запись
+    $releaseSlots = static function (int $bookingId) use ($pdo): void {
+        $pdo->prepare(
+            "UPDATE slots SET status = 'free'
+              WHERE status = 'booked'
+                AND id IN (SELECT slot_id FROM booking_slots WHERE booking_id = ?)"
+        )->execute([$bookingId]);
+        $pdo->prepare('DELETE FROM booking_slots WHERE booking_id = ?')->execute([$bookingId]);
+    };
+
     if ($id > 0 && $act === 'status') {
         $newStatus = (string) ($_POST['status'] ?? '');
         if (in_array($newStatus, ['new', 'confirmed', 'cancelled'], true)) {
             $pdo->exec('BEGIN IMMEDIATE');
-            $st = $pdo->prepare('SELECT slot_id, status FROM bookings WHERE id = ?');
+            $st = $pdo->prepare('SELECT status FROM bookings WHERE id = ?');
             $st->execute([$id]);
-            if ($row = $st->fetch()) {
+            if ($st->fetch() !== false) {
                 $pdo->prepare('UPDATE bookings SET status = ? WHERE id = ?')->execute([$newStatus, $id]);
-                // Отмена возвращает слот в продажу; заявка хранит снапшот даты и времени
-                if ($newStatus === 'cancelled' && $row['slot_id'] !== null) {
-                    $pdo->prepare("UPDATE slots SET status = 'free' WHERE id = ? AND status = 'booked'")
-                        ->execute([(int) $row['slot_id']]);
+                // Отмена возвращает время в продажу; заявка хранит снапшот даты и времени
+                if ($newStatus === 'cancelled') {
+                    $releaseSlots($id);
                     $pdo->prepare('UPDATE bookings SET slot_id = NULL WHERE id = ?')->execute([$id]);
                 }
             }
@@ -50,13 +60,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if ($id > 0 && $act === 'delete') {
         // Полное стирание ПДн: строка удаляется целиком
         $pdo->exec('BEGIN IMMEDIATE');
-        $st = $pdo->prepare('SELECT slot_id FROM bookings WHERE id = ?');
+        $st = $pdo->prepare('SELECT id FROM bookings WHERE id = ?');
         $st->execute([$id]);
-        if (($row = $st->fetch()) !== false) {
-            if ($row['slot_id'] !== null) {
-                $pdo->prepare("UPDATE slots SET status = 'free' WHERE id = ? AND status = 'booked'")
-                    ->execute([(int) $row['slot_id']]);
-            }
+        if ($st->fetch() !== false) {
+            $releaseSlots($id);
             $pdo->prepare('DELETE FROM bookings WHERE id = ?')->execute([$id]);
             log_app('info', "Админка: заявка №{$id} удалена вместе с ПДн");
         }
@@ -135,7 +142,11 @@ require dirname(__DIR__) . '/app/includes/layout/admin_header.php';
       <?php foreach ($bookings as $b): ?>
       <tr>
         <td class="nowrap">№<?= (int) $b['id'] ?><br><span class="muted"><?= e($b['created_at']) ?></span></td>
-        <td class="nowrap"><?= e($b['slot_date']) ?><br><strong><?= e($b['slot_time']) ?></strong></td>
+        <td class="nowrap"><?= e($b['slot_date']) ?><br><strong><?= e($b['slot_time']) ?></strong>
+          <?php if ((int) ($b['hours'] ?? 1) > 1): ?>
+          <br><span class="muted"><?= (int) $b['hours'] ?> ч</span>
+          <?php endif; ?>
+        </td>
         <td class="nowrap"><?= e(staff_name((string) ($b['master'] ?? ''))) ?></td>
         <td><?= e($b['name']) ?></td>
         <td class="nowrap"><a href="tel:<?= e($b['phone']) ?>"><?= e($b['phone']) ?></a></td>

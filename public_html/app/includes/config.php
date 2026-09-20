@@ -38,7 +38,8 @@ define('RETENTION_MONTHS', max(1, (int) cfg('RETENTION_MONTHS', '12')));
 define('REMINDER_HOURS_BEFORE', max(1, (int) cfg('REMINDER_HOURS_BEFORE', '2')));
 // Максимальная длительность одной брони: столько подряд идущих часов
 // клиент может занять через сайт
-define('MAX_BOOKING_HOURS', min(12, max(1, (int) cfg('MAX_BOOKING_HOURS', '4'))));
+define('MAX_BOOKING_HOURS', min(12, max(1, (int) cfg('MAX_BOOKING_HOURS', '12'))));
+define('MAX_BOOKING_DAYS', min(7, max(1, (int) cfg('MAX_BOOKING_DAYS', '7'))));
 
 // --- публичные реквизиты (не секреты, поэтому в коде) ---
 const COMPANY_NAME          = 'ООО «ФРОЗЕН РЕКОРДС»';

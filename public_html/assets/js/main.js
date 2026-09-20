@@ -136,29 +136,37 @@
     var selectedDate = null;
     var selectedSlot = null; // {id, date, time}
     var hours = 1;
+    var availableHours = new Set();
+    var calendarFrom = app.dataset.today || isoDate(new Date());
+
+    function durationLabel(value) {
+      return value >= 24 && value % 24 === 0 ? (value / 24) + ' дн.' : value + ' ч';
+    }
+
+    // Даты API — московское время. UTC здесь служит только шкалой календарных
+    // часов и не зависит от часового пояса устройства посетителя.
+    function calendarHour(date, time) {
+      return Date.parse(date + 'T' + time + ':00Z');
+    }
 
     // Начало сессии годится, только если следом идёт нужное число свободных
     // часов подряд: иначе клиент выбрал бы время, а бронь сорвалась бы на сервере
-    function slotsWithRoom(list) {
-      if (hours <= 1) { return list; }
-      return list.filter(function (slot, i) {
-        for (var step = 1; step < hours; step++) {
-          var next = list[i + step];
-          if (!next || next.time_start !== nextHour(list[i + step - 1].time_start)) { return false; }
+    function slotsWithRoom(list, date) {
+      return list.filter(function (slot) {
+        var start = calendarHour(date, slot.time_start);
+        for (var step = 0; step < hours; step++) {
+          if (!availableHours.has(start + step * 3600000)) { return false; }
         }
         return true;
       });
     }
 
-    function nextHour(time) {
-      var h = (parseInt(time.slice(0, 2), 10) + 1) % 24;
-      return (h < 10 ? '0' : '') + h + ':00';
-    }
-
     // Конец сессии для подписи: начало плюс выбранное число часов
-    function sessionEnd(startTime) {
-      var h = (parseInt(startTime.slice(0, 2), 10) + hours) % 24;
-      return (h < 10 ? '0' : '') + h + ':00';
+    function sessionEnd(date, startTime) {
+      var end = new Date(calendarHour(date, startTime) + hours * 3600000);
+      var endDate = end.toISOString().slice(0, 10);
+      var time = pad(end.getUTCHours()) + ':' + pad(end.getUTCMinutes());
+      return (endDate === date ? '' : humanDate(endDate) + ' ' + end.getUTCFullYear() + ', ') + time;
     }
 
     function showMessage(text, isOk) {
@@ -174,7 +182,7 @@
 
     function renderChosen() {
       if (selectedSlot) {
-        chosenEl.textContent = 'Вы выбрали: ' + humanDate(selectedSlot.date) + ', ' + selectedSlot.time;
+        chosenEl.textContent = 'Вы выбрали: ' + humanDate(selectedSlot.date) + ', ' + selectedSlot.time + ' · ' + durationLabel(hours) + ' (МСК)';
         slotInput.value = String(selectedSlot.id);
       } else {
         chosenEl.textContent = '';
@@ -185,23 +193,23 @@
 
     function renderSlots() {
       gridEl.innerHTML = '';
-      var list = slotsWithRoom(days[selectedDate] || []);
+      var list = slotsWithRoom(days[selectedDate] || [], selectedDate);
       emptyEl.hidden = list.length !== 0;
       emptyEl.textContent = hours > 1
-        ? 'На этот день нет ' + hours + ' свободных часов подряд — выберите другой день или меньшую длительность.'
+        ? 'На эту дату нет свободного интервала на ' + durationLabel(hours) + ' — выберите другую дату или меньшую длительность.'
         : 'На этот день свободных слотов нет — загляните в соседние дни.';
       list.forEach(function (slot) {
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'slot-btn';
         b.textContent = slot.time_start;
-        b.setAttribute('aria-label', 'Начало в ' + slot.time_start + ', до ' + sessionEnd(slot.time_start));
+        b.setAttribute('aria-label', 'Начало в ' + slot.time_start + ', до ' + sessionEnd(selectedDate, slot.time_start));
         var isSelected = selectedSlot && selectedSlot.id === slot.id;
         b.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
         b.addEventListener('click', function () {
           selectedSlot = {
             id: slot.id, date: selectedDate,
-            time: slot.time_start + '–' + sessionEnd(slot.time_start)
+            time: slot.time_start + '–' + sessionEnd(selectedDate, slot.time_start)
           };
           hideMessage();
           renderSlots();
@@ -212,7 +220,7 @@
     }
 
     function initHoursPicker() {
-      var picker = $('#hours-picker');
+      var picker = $('#duration-picker');
       if (!picker) { return; }
       picker.addEventListener('click', function (ev) {
         var btn = ev.target.closest('.hours-btn');
@@ -224,7 +232,7 @@
         // Выбранное время могло перестать подходить под новую длительность
         selectedSlot = null;
         hideMessage();
-        renderDates(isoDate(new Date()));
+        renderDates(calendarFrom);
         renderSlots();
         renderChosen();
       });
@@ -241,7 +249,7 @@
         b.type = 'button';
         b.className = 'date-btn';
         b.dataset.date = iso;
-        var free = slotsWithRoom(days[iso] || []).length;
+        var free = slotsWithRoom(days[iso] || [], iso).length;
         b.innerHTML = '<span class="d-num">' + d.getDate() + '</span>' +
           '<span class="d-wd">' + WEEKDAYS[d.getDay()] + '</span>';
         b.setAttribute('aria-label', humanDate(iso) + ', подходящих вариантов: ' + free);
@@ -260,19 +268,24 @@
     }
 
     function loadSlots(keepSelection) {
-      var today = isoDate(new Date());
+      var today = calendarFrom;
       fetch('/api/slots.php?from=' + today, { headers: { 'Accept': 'application/json' } })
         .then(function (r) { return r.json(); })
         .then(function (data) {
           days = data.days || {};
+          calendarFrom = data.from || today;
+          availableHours.clear();
+          Object.keys(days).forEach(function (date) {
+            days[date].forEach(function (slot) { availableHours.add(calendarHour(date, slot.time_start)); });
+          });
           if (!keepSelection || !selectedDate) {
             // По умолчанию — первый день, где есть свободные слоты
             selectedDate = Object.keys(days).sort()[0] || today;
           }
-          if (selectedSlot && !(days[selectedSlot.date] || []).some(function (s) { return s.id === selectedSlot.id; })) {
+          if (selectedSlot && !slotsWithRoom(days[selectedSlot.date] || [], selectedSlot.date).some(function (s) { return s.id === selectedSlot.id; })) {
             selectedSlot = null;
           }
-          renderDates(today);
+          renderDates(calendarFrom);
           renderSlots();
           renderChosen();
         })
@@ -329,12 +342,9 @@
             var withMaster = res.body.master_name
               ? ' Специалист: ' + res.body.master_name + '.'
               : '';
-            var length = (res.body.hours || 1) > 1
-              ? ' на ' + res.body.hours + ' ч'
-              : '';
             $('#success-details').textContent =
-              'Ждём вас ' + humanDate(selectedSlot.date) + ' в ' + selectedSlot.time.split('–')[0] +
-              length + '. Номер заявки — ' + res.body.booking_id + '.' + withMaster;
+              'Сессия: ' + humanDate(res.body.slot.date) + ', ' + res.body.slot.time +
+              ' (МСК), ' + durationLabel(res.body.hours || 1) + '. Номер заявки — ' + res.body.booking_id + '.' + withMaster;
             $('#booking-success').scrollIntoView({ block: 'center' });
             return;
           }

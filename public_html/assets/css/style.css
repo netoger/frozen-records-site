@@ -431,6 +431,13 @@ a.contact-card:hover { border-color: var(--accent-soft); color: var(--text); }
   background: var(--accent-deep); border-color: var(--accent-deep); color: #fff;
 }
 .hours-hint { margin: 8px 0 0; }
+.duration-label { margin: 20px 0 10px; color: var(--muted); font-size: .9375rem; }
+.public-site #duration-picker .hours-picker { display: grid; width: 100%; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.public-site #duration-picker #days-picker { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.public-site #duration-picker .hours-btn { padding-inline: 6px; font-size: .875rem; }
+@media (max-width: 600px) {
+  .public-site #duration-picker .hours-picker, .public-site #duration-picker #days-picker { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 .date-strip {
   display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px;

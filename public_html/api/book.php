@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../app/includes/notify.php';
 require_once __DIR__ . '/../app/includes/staff.php';
+require_once __DIR__ . '/../app/includes/booking.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     json_out(['error' => 'Метод не поддерживается'], 405);
@@ -68,9 +69,9 @@ if ($master !== '' && staff_find($master) === null) {
     $master = '';
 }
 
-$hours = (int) ($_POST['hours'] ?? 1);
-if ($hours < 1 || $hours > MAX_BOOKING_HOURS) {
-    json_out(['error' => 'Выберите длительность от 1 до ' . MAX_BOOKING_HOURS . ' часов.', 'code' => 'validation'], 400);
+$hours = booking_valid_hours($_POST['hours'] ?? 1);
+if ($hours === null) {
+    json_out(['error' => 'Выберите от 1 до ' . MAX_BOOKING_HOURS . ' часов или от 1 до ' . MAX_BOOKING_DAYS . ' дней.', 'code' => 'validation'], 400);
 }
 
 $pdo = db();
@@ -90,30 +91,20 @@ try {
         json_out(['error' => 'Такого слота нет. Обновите страницу.', 'code' => 'slot_missing'], 404);
     }
     // Полная дата-время: посимвольное сравнение времени врало на границе суток
-    $isPast = strtotime($slot['date'] . ' ' . $slot['time_start']) <= time();
+    $isPast = strtotime($slot['date'] . ' ' . $slot['time_start']) < time() + 3600;
     if ($slot['status'] !== 'free' || $isPast) {
         $pdo->exec('ROLLBACK');
         json_out(['error' => $slotTakenMsg, 'code' => 'slot_taken'], 409);
     }
 
-    // Сессия на несколько часов занимает подряд идущие слоты того же дня.
-    // Берём их одним запросом внутри транзакции: если хоть один занят или
-    // цепочка прерывается, бронь не создаётся вовсе.
-    $need = $pdo->prepare(
-        "SELECT id, time_start, time_end, status FROM slots
-          WHERE date = ? AND time_start >= ? ORDER BY time_start LIMIT ?"
-    );
-    $need->execute([$slot['date'], $slot['time_start'], $hours]);
-    $chain = $need->fetchAll();
-
-    $expected = strtotime($slot['date'] . ' ' . $slot['time_start']);
-    foreach ($chain as $link) {
-        if ($link['status'] !== 'free' || strtotime($slot['date'] . ' ' . $link['time_start']) !== $expected) {
-            $chain = [];
-            break;
-        }
-        $expected += 3600;
+    $endsAt = (new DateTimeImmutable($slot['date'] . ' ' . $slot['time_start']))->modify('+' . $hours . ' hours');
+    if ($endsAt > (new DateTimeImmutable('today'))->modify('+' . BOOKING_HORIZON_DAYS . ' days')) {
+        $pdo->exec('ROLLBACK');
+        json_out(['error' => 'Сессия выходит за открытый период записи. Выберите более раннее начало.', 'code' => 'validation'], 400);
     }
+
+    // Дата каждого часа проверяется отдельно: сессия может переходить через полночь.
+    $chain = booking_free_chain($pdo, $slot['date'], $slot['time_start'], $hours);
 
     if (count($chain) !== $hours) {
         $pdo->exec('ROLLBACK');
@@ -125,7 +116,7 @@ try {
         ], 409);
     }
 
-    $timeLabel = $slot['time_start'] . '–' . $chain[count($chain) - 1]['time_end'];
+    $timeLabel = booking_time_label($slot['date'], $slot['time_start'], $hours);
 
     $ins = $pdo->prepare(
         "INSERT INTO bookings (slot_id, slot_date, slot_time, master, hours, name, phone, comment, consent_at, ip, status)

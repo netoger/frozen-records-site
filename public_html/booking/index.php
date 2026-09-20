@@ -23,7 +23,7 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
 <section class="section" aria-labelledby="booking-h">
   <div class="container booking-container">
     <h1 class="section-title" id="booking-h">Онлайн-запись</h1>
-    <p class="muted booking-intro">Один слот — один час работы в студии. Выберите день и время,
+    <p class="muted booking-intro">Запись на 1–12 часов или 1–7 дней. Выберите длительность, дату и время начала,
       оставьте контакты — менеджер перезвонит и подтвердит бронь.
       Отменить или перенести запись можно по телефону <a href="<?= e(STUDIO_PHONE_HREF) ?>"><?= e(STUDIO_PHONE) ?></a>.</p>
 
@@ -33,7 +33,7 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
         студия на связи круглосуточно.</p>
     </noscript>
 
-    <div id="booking-app" data-horizon="<?= BOOKING_HORIZON_DAYS ?>" hidden>
+    <div id="booking-app" data-horizon="<?= BOOKING_HORIZON_DAYS ?>" data-today="<?= e(date('Y-m-d')) ?>" hidden>
 
       <?php
         $team = staff_list();
@@ -61,8 +61,10 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
       </div>
       <?php endif; ?>
 
-      <h2 class="booking-step"><?= ++$step ?>. Сколько часов нужно</h2>
-      <div class="hours-picker" id="hours-picker" role="group" aria-label="Длительность сессии">
+      <h2 class="booking-step"><?= ++$step ?>. Выберите длительность</h2>
+      <div id="duration-picker">
+      <p class="duration-label" id="hours-label">В часах</p>
+      <div class="hours-picker" id="hours-picker" role="group" aria-labelledby="hours-label">
         <?php for ($h = 1; $h <= MAX_BOOKING_HOURS; $h++): ?>
         <button type="button" class="hours-btn" data-hours="<?= $h ?>"
                 aria-pressed="<?= $h === 1 ? 'true' : 'false' ?>">
@@ -70,13 +72,23 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
         </button>
         <?php endfor; ?>
       </div>
-      <p class="field-hint hours-hint">Показываем только то время, с которого свободно
-        нужное количество часов подряд.</p>
+      <p class="duration-label" id="days-label">В днях</p>
+      <div class="hours-picker" id="days-picker" role="group" aria-labelledby="days-label">
+        <?php for ($d = 1; $d <= MAX_BOOKING_DAYS; $d++): ?>
+        <button type="button" class="hours-btn" data-hours="<?= $d * 24 ?>" aria-pressed="false">
+          <?= $d ?> <?= $d === 1 ? 'день' : ($d < 5 ? 'дня' : 'дней') ?>
+        </button>
+        <?php endfor; ?>
+      </div>
+      </div>
+      <p class="field-hint hours-hint">Один день — 24 часа непрерывно. Показываем только начало,
+        с которого свободен весь выбранный период. Время московское. Вся сессия должна
+        укладываться в открытые <?= BOOKING_HORIZON_DAYS ?> дней записи.</p>
 
-      <h2 class="booking-step"><?= ++$step ?>. Выберите день</h2>
+      <h2 class="booking-step"><?= ++$step ?>. Выберите дату начала</h2>
       <div class="date-strip" id="date-strip" role="group" aria-label="Дни для записи"></div>
 
-      <h2 class="booking-step"><?= ++$step ?>. Выберите время</h2>
+      <h2 class="booking-step"><?= ++$step ?>. Выберите время начала</h2>
       <div class="slots-grid" id="slots-grid" role="group" aria-label="Свободное время"></div>
       <p class="muted" id="slots-empty" hidden>На этот день свободных слотов нет — загляните в соседние дни.</p>
 

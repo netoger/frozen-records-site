@@ -24,7 +24,7 @@ $fStatus = in_array($_POST['f_status'] ?? '', ['new', 'confirmed', 'cancelled'],
 
 $where  = [];
 $params = [];
-if ($fFrom !== '')   { $where[] = 'slot_date >= ?'; $params[] = $fFrom; }
+if ($fFrom !== '')   { $where[] = "datetime(slot_date || ' ' || substr(slot_time, 1, 5), '+' || hours || ' hours') > datetime(?)"; $params[] = $fFrom; }
 if ($fTo !== '')     { $where[] = 'slot_date <= ?'; $params[] = $fTo; }
 if ($fStatus !== '') { $where[] = 'status = ?';     $params[] = $fStatus; }
 

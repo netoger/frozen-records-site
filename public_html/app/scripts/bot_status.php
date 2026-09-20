@@ -33,6 +33,7 @@ $pdo = db();
 printf("  заявок всего:     %d\n", (int) $pdo->query('SELECT COUNT(*) FROM bookings')->fetchColumn());
 printf("  ближайших (7 дн): %d\n", (int) $pdo->query(
     "SELECT COUNT(*) FROM bookings WHERE status IN ('new','confirmed')
-      AND slot_date BETWEEN date('now','localtime') AND date('now','localtime','+7 days')"
+      AND slot_date <= date('now','localtime','+7 days')
+      AND datetime(slot_date || ' ' || substr(slot_time,1,5), '+' || hours || ' hours') > datetime('now','localtime')"
 )->fetchColumn());
 printf("  свободных слотов: %d\n", (int) $pdo->query("SELECT COUNT(*) FROM slots WHERE status='free'")->fetchColumn());

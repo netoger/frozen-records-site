@@ -44,10 +44,12 @@ function bot_bookings_report(string $from, string $to, string $title): string
 {
     $st = db()->prepare(
         "SELECT id, slot_date, slot_time, master, status FROM bookings
-          WHERE slot_date BETWEEN ? AND ? AND status IN ('new','confirmed')
+          WHERE slot_date <= ?
+            AND datetime(slot_date || ' ' || substr(slot_time, 1, 5), '+' || hours || ' hours') > datetime(?)
+            AND status IN ('new','confirmed')
           ORDER BY slot_date, slot_time"
     );
-    $st->execute([$from, $to]);
+    $st->execute([$to, $from]);
     $rows = $st->fetchAll();
 
     if ($rows === []) {

@@ -30,7 +30,8 @@ if ($deleted->rowCount() > 0) {
 // 2. Прошедшие слоты, на которые нет заявок
 $pdo->exec(
     "DELETE FROM slots WHERE date < date('now','localtime','-1 day')
-       AND id NOT IN (SELECT slot_id FROM bookings WHERE slot_id IS NOT NULL)"
+       AND id NOT IN (SELECT slot_id FROM bookings WHERE slot_id IS NOT NULL)
+       AND id NOT IN (SELECT slot_id FROM booking_slots)"
 );
 
 // 3. Служебные счётчики

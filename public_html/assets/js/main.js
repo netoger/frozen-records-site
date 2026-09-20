@@ -9,6 +9,38 @@
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
 
+  // Компактное меню: без JavaScript ссылки остаются видимыми.
+  function initNavigation() {
+    var nav = $('.public-site .nav');
+    var toggle = $('.nav-toggle');
+    var menu = $('#site-menu');
+    if (!nav || !toggle || !menu) { return; }
+    toggle.hidden = false;
+    nav.classList.add('nav-ready');
+    function closeMenu() {
+      toggle.setAttribute('aria-expanded', 'false');
+      nav.classList.remove('nav-open');
+    }
+    toggle.addEventListener('click', function () {
+      var open = toggle.getAttribute('aria-expanded') !== 'true';
+      toggle.setAttribute('aria-expanded', String(open));
+      nav.classList.toggle('nav-open', open);
+    });
+    menu.addEventListener('click', function (event) {
+      if (event.target.closest('a')) { closeMenu(); }
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && nav.classList.contains('nav-open')) {
+        closeMenu();
+        toggle.focus();
+      }
+    });
+    document.addEventListener('click', function (event) {
+      if (!nav.contains(event.target)) { closeMenu(); }
+    });
+    window.addEventListener('resize', closeMenu, { passive: true });
+  }
+
   /* ------------------------------------------------------------
      Cookie-баннер. Выбор хранится в localStorage.
      Яндекс.Метрика загружается ТОЛЬКО после нажатия «Принять»
@@ -460,6 +492,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    initNavigation();
     initIntro();
     initCookieBanner();
     initBooking();

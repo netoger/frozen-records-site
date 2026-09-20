@@ -95,14 +95,18 @@ require_once __DIR__ . '/app/includes/layout/header.php';
 <section class="hero" id="hero" aria-label="Фрозен Рекордс — студия звукозаписи">
   <div class="container hero-inner">
     <p class="hero-kicker">Студия звукозаписи · Казань</p>
-    <h1 class="hero-title">Фрозен<br>Рекордс</h1>
+    <h1 class="hero-title">Фрозен<br><span>Рекордс</span></h1>
     <p class="hero-sub">Пишем вокал, сводим и мастерим — в центре Казани, круглосуточно.
       Выберите свободное время и приходите за своим звуком.</p>
     <div class="hero-actions">
       <a class="btn btn-primary btn-lg" href="/booking/">Записаться онлайн</a>
       <a class="btn btn-ghost btn-lg" href="#prices">Специалисты и цены</a>
     </div>
-    <p class="hero-note">Ближайшее свободное время — на странице записи. Работаем 24/7.</p>
+    <dl class="hero-facts" aria-label="О студии">
+      <div><dt>На связи</dt><dd>Круглосуточно</dd></div>
+      <div><dt>В центре Казани</dt><dd>Миславского, 9</dd></div>
+      <div><dt>Час в студии</dt><dd>от 500 ₽</dd></div>
+    </dl>
   </div>
 </section>
 
@@ -111,7 +115,8 @@ require_once __DIR__ . '/app/includes/layout/header.php';
 <!-- Портфолио -->
 <section class="section section-alt" id="portfolio" aria-labelledby="portfolio-h">
   <div class="container">
-    <h2 class="section-title" id="portfolio-h">Портфолио</h2>
+    <p class="section-kicker">Внутри студии</p>
+    <h2 class="section-title" id="portfolio-h">Место для вашего звука.</h2>
 
     <?php if ($portfolioTracks !== []): ?>
     <div class="tracks">
@@ -157,7 +162,8 @@ require_once __DIR__ . '/app/includes/layout/header.php';
 <section class="section section-alt" id="about" aria-labelledby="about-h">
   <div class="container about-grid">
     <div>
-      <h2 class="section-title" id="about-h">О студии</h2>
+      <p class="section-kicker">О студии</p>
+      <h2 class="section-title" id="about-h">От первого дубля<br>до релиза.</h2>
       <!-- TODO: владелец пришлёт развёрнутый текст о студии и списке оборудования.
            Пока — только подтверждённые факты, без выдуманных деталей. -->
       <p>«Фрозен Рекордс» — студия звукозаписи в самом центре Казани, на улице Миславского.
@@ -209,7 +215,7 @@ require_once __DIR__ . '/app/includes/layout/header.php';
       <?php else: ?>
       <div class="route-map route-map-stub" aria-hidden="true">
         <img class="stub-mark" src="/assets/img/mark.png" alt="" width="56" height="56" loading="lazy" decoding="async">
-        <p>Интерактивная карта появится после подключения ключа Яндекс.Карт<br>(см. .env.example)</p>
+        <p><?= e(STUDIO_ADDRESS) ?><br>Маршрут можно открыть по ссылке рядом.</p>
       </div>
       <?php endif; ?>
     </div>

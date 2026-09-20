@@ -33,7 +33,7 @@ $metrikaId = preg_replace('/\D/', '', cfg('METRIKA_ID'));
 <link rel="stylesheet" href="<?= e(asset('/assets/css/style.css')) ?>">
 <?= $extraHead ?? '' ?>
 </head>
-<body class="<?= e($bodyClass ?? '') ?>" data-metrika-id="<?= e($metrikaId) ?>">
+<body class="public-site <?= e($bodyClass ?? '') ?>" data-metrika-id="<?= e($metrikaId) ?>">
 <a class="skip-link" href="#main">Перейти к содержимому</a>
 <header class="site-header">
   <nav class="nav container" aria-label="Основная навигация">
@@ -41,7 +41,10 @@ $metrikaId = preg_replace('/\D/', '', cfg('METRIKA_ID'));
       <img class="brand-mark" src="/assets/img/mark.png" alt="" width="28" height="28" decoding="async">
       <span>Фрозен Рекордс</span>
     </a>
-    <ul class="nav-links">
+    <button class="nav-toggle" type="button" aria-label="Основное меню" aria-expanded="false" aria-controls="site-menu" hidden>
+      <span>Меню</span><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4 7h12M4 13h12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <ul class="nav-links" id="site-menu">
       <li><a href="/#prices">Специалисты и цены</a></li>
       <li><a href="/#portfolio">Портфолио</a></li>
       <li><a href="/#route">Как добраться</a></li>

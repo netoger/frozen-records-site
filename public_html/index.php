@@ -26,7 +26,7 @@ $jsonLd = [
     'image'     => BASE_URL . '/assets/img/og-cover.jpg',
     'telephone' => '+79503151420',
     'email'     => STUDIO_EMAIL,
-    'priceRange' => '500–15000 ₽',
+    'priceRange' => 'от 500 ₽',
     'currenciesAccepted' => 'RUB',
     'address'   => [
         '@type'           => 'PostalAddress',
@@ -55,36 +55,6 @@ $extraHead = '<link rel="preload" as="image" href="' . e(asset('/assets/img/logo
     . '<script type="application/ld+json">'
     . json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
     . '</script>';
-
-// Прайс. Цены подтверждены владельцем 15.08.2026.
-$priceCards = [
-    [
-        'title' => 'Запись вокала',
-        'items' => [['Час работы', 'от 500 ₽']],
-        'note'  => 'Со звукорежиссёром, в стоимость входит экспорт дорожек. '
-            . 'Итоговая ставка зависит от выбранного специалиста — смотрите раздел «Команда».',
-    ],
-    [
-        'title' => 'Демо-сессия',
-        'items' => [['Пакет', '3500 ₽']],
-        'note'  => '2 часа записи, базовая коррекция вокала (тюн), экспорт демо-версии трека.',
-    ],
-    [
-        'title' => 'Трек под ключ',
-        'items' => [['Пакет', '15 000 ₽']],
-        'note'  => 'Полный цикл работы над треком — от записи до готового мастера.',
-    ],
-    [
-        'title' => 'Сведение',
-        'items' => [['За трек', 'от 2000 ₽']],
-        'note'  => 'Итоговая цена зависит от количества дорожек и сложности.',
-    ],
-    [
-        'title' => 'Мастеринг',
-        'items' => [['За трек', 'от 1500 ₽']],
-        'note'  => 'Подготовка трека к публикации на площадках.',
-    ],
-];
 
 // Аудио-примеры работ. Файлы .mp3 положите в public_html/assets/audio/
 // и добавьте сюда записи вида:
@@ -130,37 +100,13 @@ require_once __DIR__ . '/app/includes/layout/header.php';
       Выберите свободное время и приходите за своим звуком.</p>
     <div class="hero-actions">
       <a class="btn btn-primary btn-lg" href="/booking/">Записаться онлайн</a>
-      <a class="btn btn-ghost btn-lg" href="#prices">Цены</a>
+      <a class="btn btn-ghost btn-lg" href="#prices">Специалисты и цены</a>
     </div>
     <p class="hero-note">Ближайшее свободное время — на странице записи. Работаем 24/7.</p>
   </div>
 </section>
 
-<!-- Услуги и цены -->
-<section class="section" id="prices" aria-labelledby="prices-h">
-  <div class="container">
-    <h2 class="section-title" id="prices-h">Услуги и цены</h2>
-    <div class="cards-grid">
-      <?php foreach ($priceCards as $card): ?>
-      <article class="price-card">
-        <h3 class="price-title"><?= e($card['title']) ?></h3>
-        <ul class="price-list">
-          <?php foreach ($card['items'] as [$label, $price]): ?>
-          <li><span><?= e($label) ?></span><strong><?= e($price) ?></strong></li>
-          <?php endforeach; ?>
-        </ul>
-        <p class="price-note"><?= e($card['note']) ?></p>
-      </article>
-      <?php endforeach; ?>
-    </div>
-    <div class="steps" aria-label="Как проходит запись">
-      <div class="step"><span class="step-num">1</span>Выбираете свободный час на странице записи</div>
-      <div class="step"><span class="step-num">2</span>Менеджер связывается и подтверждает бронь</div>
-      <div class="step"><span class="step-num">3</span>Приходите в студию и записываетесь</div>
-    </div>
-    <p class="center"><a class="btn btn-primary btn-lg" href="/booking/">Выбрать время</a></p>
-  </div>
-</section>
+<?php require __DIR__ . '/app/includes/layout/catalog.php'; ?>
 
 <!-- Портфолио -->
 <section class="section section-alt" id="portfolio" aria-labelledby="portfolio-h">
@@ -206,54 +152,6 @@ require_once __DIR__ . '/app/includes/layout/header.php';
     </ul>
   </div>
 </section>
-
-<!-- Команда: данные берутся из app/staff.json -->
-<?php $team = staff_list(); ?>
-<?php if ($team !== []): ?>
-<section class="section" id="team" aria-labelledby="team-h">
-  <div class="container">
-    <h2 class="section-title" id="team-h">Команда</h2>
-    <p class="muted team-intro">С вами работают звукоинженеры и продюсеры студии.
-      На странице записи можно выбрать конкретного специалиста или оставить выбор нам.</p>
-    <div class="team-grid">
-      <?php foreach ($team as $person): ?>
-      <article class="team-card">
-        <h3 class="team-name"><?= e($person['name']) ?></h3>
-        <?php if ($person['role'] !== ''): ?>
-        <p class="team-role"><?= e($person['role']) ?></p>
-        <?php endif; ?>
-        <?php if ($person['quote'] !== ''): ?>
-        <blockquote class="team-quote">«<?= e($person['quote']) ?>»</blockquote>
-        <?php endif; ?>
-        <dl class="team-facts">
-          <?php if ($person['specialization'] !== ''): ?>
-          <dt>Направление</dt><dd><?= e($person['specialization']) ?></dd>
-          <?php endif; ?>
-          <?php if ($person['experience'] !== ''): ?>
-          <dt>Опыт</dt><dd><?= e($person['experience']) ?></dd>
-          <?php endif; ?>
-          <?php if ($person['software'] !== ''): ?>
-          <dt>Работает в</dt><dd><?= e($person['software']) ?></dd>
-          <?php endif; ?>
-          <?php if ($person['rate'] !== ''): ?>
-          <dt>Час работы</dt><dd><strong><?= e($person['rate']) ?></strong></dd>
-          <?php endif; ?>
-          <?php if ($person['service'] !== ''): ?>
-          <dt>Сведение и мастеринг</dt><dd><?= e($person['service']) ?></dd>
-          <?php endif; ?>
-        </dl>
-        <p class="team-actions">
-          <a class="btn btn-ghost btn-sm" href="/booking/?master=<?= e(rawurlencode($person['id'])) ?>">Записаться</a>
-          <?php if ($person['telegram'] !== ''): ?>
-          <a class="btn btn-ghost btn-sm" href="<?= e($person['telegram']) ?>" target="_blank" rel="noopener">Телеграм</a>
-          <?php endif; ?>
-        </p>
-      </article>
-      <?php endforeach; ?>
-    </div>
-  </div>
-</section>
-<?php endif; ?>
 
 <!-- О студии -->
 <section class="section section-alt" id="about" aria-labelledby="about-h">

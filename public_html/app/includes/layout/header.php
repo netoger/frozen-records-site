@@ -42,8 +42,7 @@ $metrikaId = preg_replace('/\D/', '', cfg('METRIKA_ID'));
       <span>Фрозен Рекордс</span>
     </a>
     <ul class="nav-links">
-      <li><a href="/#prices">Цены</a></li>
-      <li><a href="/#team">Команда</a></li>
+      <li><a href="/#prices">Специалисты и цены</a></li>
       <li><a href="/#portfolio">Портфолио</a></li>
       <li><a href="/#route">Как добраться</a></li>
       <li><a href="/#contacts">Контакты</a></li>

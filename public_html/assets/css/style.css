@@ -597,3 +597,45 @@ a.contact-card:hover { border-color: var(--accent-soft); color: var(--text); }
 .btn-sm { min-height: 40px; padding: 4px 12px; font-size: 0.88rem; border-radius: 8px; }
 
 .login-box { max-width: 420px; margin: 10vh auto; }
+
+/* Единая секция специалистов и услуг: тёмные карточки, ледяные акценты. */
+.catalog { background: #000; }
+.catalog-anchor { display: block; scroll-margin-top: 110px; }
+.catalog-heading { display: flex; align-items: end; justify-content: space-between; gap: 28px; margin-bottom: 36px; }
+.catalog-heading .section-title { margin-bottom: 0; }
+.catalog-heading > p { max-width: 360px; margin: 0; line-height: 1.8; }
+.catalog-eyebrow { color: var(--ice); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 18px; }
+.catalog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.specialist { display: flex; flex-direction: column; min-width: 0; padding: clamp(24px, 3vw, 40px); border: 1px solid var(--line); border-radius: 20px; background: #0b1018; }
+.specialist-top { display: flex; align-items: center; gap: 16px; color: var(--muted); font-size: .78rem; line-height: 1.6; margin-bottom: 28px; }
+.specialist-number { color: var(--ice); font-variant-numeric: tabular-nums; padding-right: 16px; border-right: 1px solid var(--line); }
+.specialist-name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
+.specialist-name h3, .specialist-self h3 { font-size: clamp(1.4rem, 2.4vw, 2rem); margin: 0; }
+.specialist-name > span { color: var(--ice); font-size: 1rem; }
+.specialist-quote { font-size: 1.06rem; line-height: 1.65; margin: 18px 0 12px; }
+.specialist-bio { color: var(--muted); line-height: 1.75; margin: 0 0 20px; }
+.specialist-detail { color: var(--muted); font-size: .85rem; line-height: 1.65; margin: 0 0 12px; }
+.specialist-detail strong { display: block; color: var(--text); font-weight: 500; margin-bottom: 3px; }
+.specialist-pricing { margin-top: auto; padding-top: 24px; }
+.specialist-rate { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 0 16px; }
+.specialist-rate > span { color: var(--muted); font-size: .9rem; }
+.specialist-rate strong { color: var(--ice); font-size: 1.35rem; white-space: nowrap; }
+.specialist-services { margin: 0; }
+.specialist-services > div { display: flex; justify-content: space-between; gap: 20px; padding: 12px 0; border-top: 1px solid var(--line); font-size: .9rem; }
+.specialist-services dt { min-width: 0; }
+.specialist-services dd { margin: 0; text-align: right; flex-shrink: 0; }
+.specialist-revisions { color: var(--muted); font-size: .8rem; line-height: 1.65; margin: 12px 0 0; }
+.specialist-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; margin-top: 26px; }
+.specialist-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--ice); font-size: .85rem; }
+.specialist-self { justify-content: center; background: #080b11; border-style: dashed; }
+.specialist-self > .muted { line-height: 1.75; max-width: 28em; }
+.self-rate { color: var(--ice); font-size: clamp(1.8rem, 3vw, 2.6rem); margin: 28px 0; }
+.specialist-self .btn { align-self: flex-start; }
+.catalog-footnote { color: var(--muted); text-align: center; font-size: .85rem; margin: 28px 0 0; }
+@media (max-width: 700px) {
+  .catalog-heading { display: block; }
+  .catalog-heading > p { margin-top: 20px; }
+  .catalog-grid { grid-template-columns: 1fr; }
+  .specialist-services > div { gap: 12px; font-size: .85rem; }
+  .specialist-services dd { max-width: 48%; flex-shrink: 1; }
+}

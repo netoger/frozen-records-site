@@ -65,6 +65,11 @@ function staff_list(bool $onlyActive = true): array
                     'experience'     => (string) ($item['experience'] ?? ''),
                     'quote'          => (string) ($item['quote'] ?? ''),
                     'telegram'       => (string) ($item['telegram'] ?? ''),
+                    'alias'          => (string) ($item['alias'] ?? ''),
+                    'listening'      => (string) ($item['listening'] ?? ''),
+                    'revisions'      => (string) ($item['revisions'] ?? ''),
+                    'genius'         => preg_match('~^https://genius\.com/artists/[a-zA-Z0-9_-]+$~', (string) ($item['genius'] ?? '')) ? $item['genius'] : '',
+                    'services'       => array_values(array_filter($item['services'] ?? [], static fn ($row): bool => is_array($row) && count($row) === 2 && is_string($row[0] ?? null) && is_string($row[1] ?? null))),
                     'photo'          => (string) ($item['photo'] ?? ''),
                 ];
             }
@@ -93,4 +98,12 @@ function staff_name(string $id): string
         return 'Любой свободный';
     }
     return staff_find($id)['name'] ?? $id;
+}
+
+/** Отдельная услуга студии, не привязанная к специалисту. */
+function staff_self_recording(): array
+{
+    if (staff_error() !== null) { return []; }
+    $data = json_decode((string) file_get_contents(STAFF_FILE), true);
+    return is_array($data['self_recording'] ?? null) ? $data['self_recording'] : [];
 }

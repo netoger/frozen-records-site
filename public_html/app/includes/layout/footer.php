@@ -31,6 +31,19 @@
       </p>
     </section>
   </div>
+  <section class="container project-support" aria-label="Поддержка проекта">
+    <div class="support-logos">
+      <img class="support-fasie" src="/assets/img/support/fasie.svg" width="200" height="98"
+           alt="Фонд содействия инновациям" loading="lazy" decoding="async">
+      <div class="support-platform">
+        <img src="/assets/img/support/platform-reference.png" width="1144" height="1280"
+             alt="Платформа университетского технологического предпринимательства" loading="lazy" decoding="async">
+      </div>
+    </div>
+    <p>Проект реализован при поддержке Фонда содействия инновациям в рамках программы
+      «Студенческий стартап» мероприятия «Платформа университетского технологического
+      предпринимательства» федерального проекта «Технологии»</p>
+  </section>
   <div class="container footer-bottom">
     <p>© <?= date('Y') ?> <?= e(COMPANY_NAME) ?></p>
   </div>

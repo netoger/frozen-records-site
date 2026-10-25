@@ -403,6 +403,16 @@ a.contact-card:hover { border-color: var(--accent-soft); color: var(--text); }
 }
 .footer-bottom p { margin: 0; }
 
+/* Обязательная информация о поддержке проекта; независима от дизайна главной. */
+.project-support { border-top: 1px solid var(--line); padding-block: 32px 40px; }
+.support-logos { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 24px 64px; }
+.support-fasie { width: 260px; height: auto; }
+/* Второй знак показывается из предоставленного владельцем изображения.
+   Обрезка только в раскладке: исходник сохранён без перерисовки логотипа. */
+.support-platform { position: relative; width: 230px; aspect-ratio: 650 / 520; overflow: hidden; }
+.support-platform img { position: absolute; width: 176%; max-width: none; height: auto; left: -38.46%; top: -71.15%; filter: grayscale(1) contrast(3); }
+.project-support > p { max-width: 840px; margin: 20px auto 0; text-align: center; color: var(--text); font-size: .9375rem; line-height: 1.8; }
+
 /* ---------- Cookie-баннер ---------- */
 .cookie-banner {
   position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 90;

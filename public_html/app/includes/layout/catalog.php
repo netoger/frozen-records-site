@@ -8,7 +8,7 @@ $selfRecording = staff_self_recording();
     <span id="team" class="catalog-anchor" aria-hidden="true"></span>
     <div class="catalog-heading">
       <div><p class="catalog-eyebrow">Специалисты и цены</p>
-        <h2 class="section-title" id="catalog-title">Ваш звук.<br>Ваш человек.</h2></div>
+        <h2 class="section-title" id="catalog-title">Ваш звук.<br> Ваш человек.</h2></div>
       <p class="muted">Запись, сведение, мастеринг и биты.<br>Выберите, с кем хотите работать.</p>
     </div>
     <div class="catalog-grid">

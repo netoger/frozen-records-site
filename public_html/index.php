@@ -13,7 +13,7 @@ $activeNav = 'home';
 // has-intro — постоянный признак страницы с заставкой (шапка вне потока),
 // at-intro снимается скриптом при прокрутке. Оба класса ставим сразу
 // в разметке: если ждать скрипт, шапка успевает мигнуть поверх логотипа.
-$bodyClass = 'has-intro at-intro';
+$bodyClass = 'has-intro at-intro compact-home';
 
 // JSON-LD schema.org LocalBusiness
 $jsonLd = [
@@ -76,6 +76,7 @@ require_once __DIR__ . '/app/includes/layout/header.php';
 ?>
 
 <!-- Заставка: логотип на весь экран, сайт начинается ниже по прокрутке -->
+<div class="home-overview">
 <section class="intro" id="intro" aria-label="Фрозен Рекордс">
   <picture>
     <source type="image/webp" srcset="/assets/img/logo-main.webp">
@@ -110,8 +111,17 @@ require_once __DIR__ . '/app/includes/layout/header.php';
   </div>
 </section>
 
+<nav class="home-shortcuts" aria-label="Быстрый выбор услуги">
+  <a href="/booking/"><span>Запись вокала</span><strong>Выбрать время <span aria-hidden="true">↗</span></strong><small>От 1 часа до 7 дней</small></a>
+  <a href="#prices"><span>Сведение и мастеринг</span><strong>Найти специалиста <span aria-hidden="true">↗</span></strong><small>Услуги и цены команды</small></a>
+  <a href="#portfolio"><span>Внутри студии</span><strong>Посмотреть пространство <span aria-hidden="true">↗</span></strong><small>Фотографии и примеры работ</small></a>
+  <a href="#route"><span>Миславского, 9</span><strong>Как добраться <span aria-hidden="true">↗</span></strong><small>Центр Казани · цокольный этаж</small></a>
+</nav>
+</div>
+
 <?php require __DIR__ . '/app/includes/layout/catalog.php'; ?>
 
+<div class="home-story">
 <!-- Портфолио -->
 <section class="section section-alt" id="portfolio" aria-labelledby="portfolio-h">
   <div class="container">
@@ -188,6 +198,8 @@ require_once __DIR__ . '/app/includes/layout/header.php';
 </section>
 
 <!-- Как добраться -->
+</div>
+<div class="home-visit">
 <section class="section" id="route" aria-labelledby="route-h">
   <div class="container">
     <h2 class="section-title" id="route-h">Как добраться</h2>
@@ -251,4 +263,5 @@ require_once __DIR__ . '/app/includes/layout/header.php';
   </div>
 </section>
 
+</div>
 <?php require __DIR__ . '/app/includes/layout/footer.php'; ?>

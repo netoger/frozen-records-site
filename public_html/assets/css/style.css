@@ -785,6 +785,77 @@ a.contact-card:hover { border-color: var(--accent-soft); color: var(--text); }
 .self-rate { color: var(--ice); font-size: clamp(1.8rem, 3vw, 2.6rem); margin: 28px 0; }
 .specialist-self .btn { align-self: flex-start; }
 .catalog-footnote { color: var(--muted); text-align: center; font-size: .85rem; margin: 28px 0 0; }
+.home-shortcuts { display: none; }
+
+/* Компактная главная для широкого экрана. Мобильная версия остаётся линейной.
+   Удаление класса compact-home возвращает прежнюю раскладку без смены данных. */
+@media (min-width: 1100px) {
+  body.public-site.compact-home .site-header { position: sticky; opacity: 1; visibility: visible; pointer-events: auto; }
+  .compact-home .home-overview { max-width: 1200px; margin: 0 auto; padding: 24px 48px 0; display: grid; grid-template-columns: 1.05fr 1fr; gap: 20px 32px; align-items: center; }
+  .compact-home .intro { min-height: 0; padding: 0; }
+  .compact-home .intro picture { width: 100%; }
+  .compact-home .intro picture .intro-logo { width: 100%; max-height: 340px; object-fit: contain; opacity: 1; }
+  .compact-home .intro-scroll { display: none; }
+  .compact-home .hero { padding: 20px 0; scroll-margin-top: 92px; }
+  .compact-home .hero-inner { padding: 0; }
+  .compact-home .hero-kicker { font-size: .8125rem; margin-bottom: 14px; }
+  .compact-home .hero-title { font-size: 2rem; line-height: 1.25; margin-bottom: 16px; }
+  .compact-home .hero-title br { display: none; }
+  .compact-home .hero-title span::before { content: ' '; }
+  .compact-home .hero-sub { font-size: 1rem; line-height: 1.6; margin-bottom: 22px; }
+  .compact-home .hero-actions { gap: 8px; }
+  .compact-home .hero-actions .btn { padding-inline: 20px; min-height: 48px; font-size: .875rem; }
+  .compact-home .hero-facts { margin-top: 24px; padding-block: 16px 0; gap: 16px; border-bottom: 0; }
+  .compact-home .hero-facts dt { font-size: .75rem; }
+  .compact-home .hero-facts dd { font-size: .9375rem; }
+  .home-shortcuts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .home-shortcuts a { display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: var(--bg-alt); text-decoration: none; color: var(--text); }
+  .home-shortcuts a:hover { border-color: var(--accent-soft); background: var(--panel); }
+  .home-shortcuts a > span, .home-shortcuts small { color: var(--muted); font-size: .75rem; }
+  .home-shortcuts strong { font-size: .9375rem; line-height: 1.45; font-weight: 500; }
+  .home-shortcuts strong span { color: var(--accent-soft); }
+  .home-shortcuts small { margin-top: auto; }
+  .compact-home .section { padding-block: 40px; }
+  .compact-home .section-title { font-size: 2rem; margin-bottom: 20px; }
+  .compact-home .catalog-heading { margin-bottom: 24px; }
+  .compact-home .catalog-heading .section-title br { display: none; }
+  .compact-home .catalog-heading .section-title { max-width: 600px; }
+  .compact-home .catalog-heading > p { font-size: .875rem; line-height: 1.6; }
+  .compact-home .catalog-eyebrow { margin-bottom: 10px; }
+  .compact-home .catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .compact-home .specialist { padding: 24px; border-radius: 22px; }
+  .compact-home .specialist-top { font-size: .8125rem; margin-bottom: 14px; }
+  .compact-home .specialist-name h3, .compact-home .specialist-self h3 { font-size: 1.75rem; }
+  .compact-home .specialist-name { gap: 8px; }
+  .compact-home .specialist-quote { font-size: .875rem; line-height: 1.6; margin-block: 12px; }
+  .compact-home .specialist-pricing { padding-top: 16px; }
+  .compact-home .specialist-rate strong { font-size: 1.25rem; }
+  .compact-home .specialist-services > div { font-size: .875rem; gap: 12px; padding-block: 10px; }
+  .compact-home .specialist-revisions { font-size: .8125rem; }
+  .compact-home .specialist-about { margin-top: 16px; }
+  .compact-home .specialist-actions { margin-top: 16px; gap: 8px; }
+  .compact-home .specialist-actions .btn { padding-inline: 20px; }
+  .compact-home .specialist-bio { font-size: .9375rem; }
+  .compact-home .catalog-footnote { margin-top: 20px; }
+  .compact-home .home-story, .compact-home .home-visit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 1200px; padding: 0 48px; margin: 0 auto 20px; align-items: start; }
+  .compact-home .home-story > .section, .compact-home .home-visit > .section { min-width: 0; padding: 28px; background: var(--bg-alt); border: 1px solid var(--line); border-radius: 24px; }
+  .compact-home .home-story .container, .compact-home .home-visit .container { padding: 0; }
+  .compact-home .home-story .section-title, .compact-home .home-visit .section-title { font-size: 1.625rem; }
+  .compact-home .home-story p, .compact-home .home-visit p { font-size: .9375rem; }
+  .compact-home .gallery { gap: 8px; margin-top: 20px; }
+  .compact-home .gallery-item:first-child { grid-column: auto; grid-row: auto; }
+  .compact-home .gallery-item:first-child img { height: auto; }
+  .compact-home .gallery-item img { border-radius: 10px; aspect-ratio: 4 / 3; }
+  .compact-home .about-grid { display: block; }
+  .compact-home .about-grid > picture { display: none; }
+  .compact-home .route-grid { display: block; }
+  .compact-home .route-map { min-height: 220px; margin-top: 20px; border-radius: 16px; }
+  .compact-home .route-info .btn { padding-inline: 16px; font-size: .8125rem; }
+  .compact-home .contacts-grid { grid-template-columns: 1fr; gap: 10px; }
+  .compact-home .contact-card { padding: 16px 20px; gap: 4px; background: var(--panel); border-radius: 16px; }
+  .compact-home .contact-label, .compact-home .contact-card .muted { font-size: .8125rem; }
+  .compact-home .contact-value { font-size: 1rem; }
+}
 @media (max-width: 700px) {
   .catalog-heading { display: block; }
   .catalog-heading > p { margin-top: 20px; }

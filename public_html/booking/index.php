@@ -92,7 +92,7 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
       <div class="slots-grid" id="slots-grid" role="group" aria-label="Свободное время"></div>
       <p class="muted" id="slots-empty" hidden>На этот день свободных слотов нет — загляните в соседние дни.</p>
 
-      <form id="booking-form" novalidate>
+      <form id="booking-form" method="post" action="/api/book.php" novalidate>
         <h2 class="booking-step"><?= ++$step ?>. Оставьте контакты</h2>
 
         <p class="chosen-slot" id="chosen-slot" aria-live="polite"></p>

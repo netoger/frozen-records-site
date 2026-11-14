@@ -6,17 +6,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/bot.php';
 
-$aliveFile = DATA_DIR . '/bot_daemon.alive';
-$alive     = is_file($aliveFile) ? (int) file_get_contents($aliveFile) : 0;
+$offsetFile = TELEGRAM_OFFSET_FILE;
+$alive = is_file($offsetFile) ? (int) filemtime($offsetFile) : 0;
 $age       = $alive > 0 ? time() - $alive : null;
 
-echo "=== Служба опроса ===\n";
+echo "=== Опрос Telegram ===\n";
 if ($age === null) {
-    echo "  не запущена (нет отметки о работе)\n";
+    echo "  нет отметки об успешном опросе\n";
 } elseif ($age <= 180) {
-    echo "  работает, последний круг {$age} с назад\n";
+    echo "  последний успешный опрос {$age} с назад\n";
 } else {
-    echo "  ПОХОЖЕ, ОСТАНОВЛЕНА: последний круг был {$age} с назад\n";
+    echo "  последний успешный опрос {$age} с назад; проверьте планировщик и сеть\n";
 }
 
 echo "\n=== Настройки ===\n";

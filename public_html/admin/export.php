@@ -14,11 +14,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 }
 csrf_verify();
 
-$validDate = static fn (?string $d): string =>
-    ($d !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) ? $d : '';
-
-$fFrom   = $validDate($_POST['f_from'] ?? null);
-$fTo     = $validDate($_POST['f_to'] ?? null);
+$fFrom   = valid_iso_date($_POST['f_from'] ?? null) ?? '';
+$fTo     = valid_iso_date($_POST['f_to'] ?? null) ?? '';
 $fStatus = in_array($_POST['f_status'] ?? '', ['new', 'confirmed', 'cancelled'], true)
     ? $_POST['f_status'] : '';
 
@@ -41,15 +38,18 @@ header('Cache-Control: no-store');
 
 $out = fopen('php://output', 'w');
 fwrite($out, "\xEF\xBB\xBF"); // BOM, чтобы Excel понял UTF-8
+// Excel иначе вычислит формулу из имени или комментария посетителя.
+$csvText = static fn (string $value): string =>
+    preg_match('/^(?:\s*[=+\-@]|[\x00-\x1F])/u', $value) ? "'" . $value : $value;
 fputcsv($out, ['№', 'Создана', 'Дата слота', 'Время', 'Часов', 'Специалист', 'Имя', 'Телефон',
-    'Комментарий', 'Статус', 'Согласие дано', 'IP'], ';');
+    'Комментарий', 'Статус', 'Согласие дано', 'IP'], ';', '"', '');
 foreach ($st as $row) {
     fputcsv($out, [
         $row['id'], $row['created_at'], $row['slot_date'], $row['slot_time'],
         (int) ($row['hours'] ?? 1),
         staff_name((string) ($row['master'] ?? '')),
-        $row['name'], $row['phone'], $row['comment'], $row['status'],
+        $csvText($row['name']), $csvText($row['phone']), $csvText($row['comment']), $row['status'],
         $row['consent_at'], $row['ip'],
-    ], ';');
+    ], ';', '"', '');
 }
 fclose($out);

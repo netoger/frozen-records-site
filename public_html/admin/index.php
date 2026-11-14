@@ -21,7 +21,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $error = 'Вход отключён: задайте ADMIN_PASSWORD_HASH в файле .env (см. .env.example).';
     } elseif (login_blocked($ip)) {
         $error = 'Слишком много неверных попыток. Подождите 15 минут.';
-    } elseif (password_verify((string) ($_POST['password'] ?? ''), $hash)) {
+    } elseif (is_string($_POST['password'] ?? null) && password_verify($_POST['password'], $hash)) {
         login_success($ip);
         header('Location: /admin/bookings.php');
         exit;

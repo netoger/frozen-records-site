@@ -162,7 +162,7 @@ function bot_poll_cycle(int $runSeconds, int $pollWait = 25): int
         return -1;
     }
 
-    $offsetFile = DATA_DIR . '/tg_offset.txt';
+    $offsetFile = TELEGRAM_OFFSET_FILE;
     $offset   = (int) @file_get_contents($offsetFile);
     $deadline = time() + $runSeconds;
     $handled  = 0;
@@ -250,6 +250,10 @@ function bot_welcome_text(): string
  */
 function bot_handle_message(array $message): ?array
 {
+    // Служебные ответы и привязка получателя допустимы только в личном чате.
+    if (($message['chat']['type'] ?? '') !== 'private') {
+        return null;
+    }
     $chatId   = (string) ($message['chat']['id'] ?? '');
     $text     = trim((string) ($message['text'] ?? ''));
     $username = (string) ($message['from']['username'] ?? '');

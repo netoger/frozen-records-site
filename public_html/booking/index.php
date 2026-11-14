@@ -6,7 +6,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../app/includes/staff.php';
 
 $pageTitle = 'Онлайн-запись — студия звукозаписи Фрозен Рекордс, Казань';
-$pageDesc  = 'Выберите свободный час и оставьте заявку на запись в студии «Фрозен Рекордс» в Казани. '
+$pageDesc  = 'Запишитесь в студию «Фрозен Рекордс» в Казани на 1–12 часов или 1–7 дней. Выберите специалиста и свободное время. '
     . 'Работаем круглосуточно, менеджер подтвердит бронь по телефону.';
 $canonical = BASE_URL . '/booking/';
 $activeNav = 'booking';
@@ -38,8 +38,8 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
       <?php
         $team = staff_list();
         // Ссылка «Записаться» из карточки специалиста подставляет его сразу
-        $preselected = (string) ($_GET['master'] ?? '');
-        if ($preselected !== '' && staff_find($preselected) === null) {
+        $preselected = $_GET['master'] ?? '';
+        if (!is_string($preselected) || staff_find($preselected, true) === null) {
             $preselected = '';
         }
       ?>
@@ -92,7 +92,7 @@ require dirname(__DIR__) . '/app/includes/layout/header.php';
       <div class="slots-grid" id="slots-grid" role="group" aria-label="Свободное время"></div>
       <p class="muted" id="slots-empty" hidden>На этот день свободных слотов нет — загляните в соседние дни.</p>
 
-      <form id="booking-form" novalidate>
+      <form id="booking-form" method="post" action="/api/book.php" novalidate>
         <h2 class="booking-step"><?= ++$step ?>. Оставьте контакты</h2>
 
         <p class="chosen-slot" id="chosen-slot" aria-live="polite"></p>

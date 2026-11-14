@@ -23,8 +23,11 @@ $metrikaId = preg_replace('/\D/', '', cfg('METRIKA_ID'));
 <meta property="og:url" content="<?= e($canonical) ?>">
 <meta property="og:image" content="<?= e(BASE_URL) ?>/assets/img/og-cover.jpg">
 <meta property="og:locale" content="ru_RU">
-<!-- Заготовка подтверждения прав в Яндекс.Вебмастере: раскомментируйте и вставьте код -->
-<!-- <meta name="yandex-verification" content="XXXXXXXXXXXXXXXX"> -->
+<?php foreach (['yandex-verification' => 'YANDEX_VERIFICATION', 'google-site-verification' => 'GOOGLE_SITE_VERIFICATION'] as $meta => $key): ?>
+<?php if (cfg($key) !== ''): ?>
+<meta name="<?= e($meta) ?>" content="<?= e(cfg($key)) ?>">
+<?php endif; ?>
+<?php endforeach; ?>
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="/favicon-512.png" sizes="512x512" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">

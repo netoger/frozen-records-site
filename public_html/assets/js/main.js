@@ -135,6 +135,7 @@
     var days = {};          // date -> [{id, time_start, time_end}]
     var selectedDate = null;
     var selectedSlot = null; // {id, date, time}
+    var submitting = false;
     var hours = 1;
     var availableHours = new Set();
     var calendarFrom = app.dataset.today || isoDate(new Date());
@@ -177,7 +178,7 @@
     function hideMessage() { msgEl.hidden = true; }
 
     function updateSubmitState() {
-      submitBtn.disabled = !(selectedSlot && consentEl.checked);
+      submitBtn.disabled = submitting || !(selectedSlot && consentEl.checked);
     }
 
     function renderChosen() {
@@ -232,6 +233,7 @@
         // Выбранное время могло перестать подходить под новую длительность
         selectedSlot = null;
         hideMessage();
+        selectAvailableDate();
         renderDates(calendarFrom);
         renderSlots();
         renderChosen();
@@ -267,10 +269,21 @@
       }
     }
 
+    function selectAvailableDate() {
+      if (!slotsWithRoom(days[selectedDate] || [], selectedDate).length) {
+        selectedDate = Object.keys(days).sort().find(function (date) {
+          return slotsWithRoom(days[date], date).length > 0;
+        }) || calendarFrom;
+      }
+    }
+
     function loadSlots(keepSelection) {
       var today = calendarFrom;
       fetch('/api/slots.php?from=' + today, { headers: { 'Accept': 'application/json' } })
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (!r.ok) { throw new Error('Не удалось получить расписание'); }
+          return r.json();
+        })
         .then(function (data) {
           days = data.days || {};
           calendarFrom = data.from || today;
@@ -278,10 +291,8 @@
           Object.keys(days).forEach(function (date) {
             days[date].forEach(function (slot) { availableHours.add(calendarHour(date, slot.time_start)); });
           });
-          if (!keepSelection || !selectedDate) {
-            // По умолчанию — первый день, где есть свободные слоты
-            selectedDate = Object.keys(days).sort()[0] || today;
-          }
+          if (!keepSelection) { selectedDate = null; }
+          selectAvailableDate();
           if (selectedSlot && !slotsWithRoom(days[selectedSlot.date] || [], selectedSlot.date).some(function (s) { return s.id === selectedSlot.id; })) {
             selectedSlot = null;
           }
@@ -299,6 +310,7 @@
 
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
+      if (submitting) { return; }
       hideMessage();
 
       if (!selectedSlot) { showMessage('Сначала выберите день и время.'); return; }
@@ -313,13 +325,14 @@
         return;
       }
       var phoneDigits = form.phone.value.replace(/\D/g, '');
-      if (!(phoneDigits.length === 11 || (phoneDigits.length === 10 && phoneDigits[0] === '9'))) {
+      if (!/^(?:[78])?9\d{9}$/.test(phoneDigits)) {
         showMessage('Проверьте телефон: нужен российский мобильный номер.');
         form.phone.focus();
         return;
       }
 
-      submitBtn.disabled = true;
+      submitting = true;
+      updateSubmitState();
       submitBtn.textContent = 'Отправляем…';
 
       var payload = new FormData(form);
@@ -337,6 +350,7 @@
         .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
         .then(function (res) {
           if (res.body && res.body.ok) {
+            selectedSlot = null;
             form.hidden = true;
             $('#booking-success').hidden = false;
             var withMaster = res.body.master_name
@@ -349,7 +363,7 @@
             return;
           }
           showMessage((res.body && res.body.error) || 'Что-то пошло не так. Попробуйте ещё раз.');
-          if (res.body && res.body.code === 'slot_taken') {
+          if (res.body && ['slot_taken', 'slot_missing'].includes(res.body.code)) {
             selectedSlot = null;
             loadSlots(true); // слот увели — обновляем сетку
           }
@@ -359,6 +373,7 @@
           showMessage('Нет связи с сервером. Проверьте интернет или позвоните нам.');
         })
         .then(function () {
+          submitting = false;
           submitBtn.textContent = 'Отправить заявку';
           updateSubmitState();
         });

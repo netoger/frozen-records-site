@@ -162,7 +162,7 @@ function telegram_endpoints(): array
     // адрес из DNS у нас как раз нестабильный — он отбрасывает соединения
     // в 5 случаях из 6, и без этой памяти каждый запрос начинался бы
     // с ожидания таймаута на заведомо мёртвом адресе.
-    $best = trim((string) @file_get_contents(DATA_DIR . '/tg_endpoint.txt'));
+    $best = trim((string) @file_get_contents(TELEGRAM_ENDPOINT_FILE));
 
     $list = array_merge($best !== '' ? [$best] : [], $resolved, $fallback);
     $list = array_filter($list, static fn (string $ip): bool => filter_var($ip, FILTER_VALIDATE_IP) !== false);
@@ -207,7 +207,7 @@ function telegram_request(string $method, array $params, int $maxTries, int $tim
 
         if ($err === 0 && $body !== false) {
             // Запоминаем удачный адрес — со следующего запроса он идёт первым
-            @file_put_contents(DATA_DIR . '/tg_endpoint.txt', $ip);
+            @file_put_contents(TELEGRAM_ENDPOINT_FILE, $ip, LOCK_EX);
             return (string) $body;
         }
         $lastError = "адрес {$ip}: ошибка сети {$err}";

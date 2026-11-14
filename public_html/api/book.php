@@ -1,6 +1,6 @@
 <?php
 // POST /api/book.php — создание брони.
-// Порядок проверок: honeypot → лимит IP → капча → согласие → валидация →
+// Порядок проверок: honeypot → лимит IP → согласие → валидация → капча →
 // транзакция с атомарным занятием слота → уведомления (без ПДн).
 
 declare(strict_types=1);
@@ -15,10 +15,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 
 $ip = client_ip();
 
+foreach (['website', 'smart-token', 'consent', 'name', 'phone', 'comment', 'slot_id', 'master', 'hours'] as $field) {
+    if (isset($_POST[$field]) && !is_string($_POST[$field])) {
+        json_out(['error' => 'Некорректные поля заявки.', 'code' => 'validation'], 400);
+    }
+}
+
 // 1. Honeypot: скрытое поле, которое человек не видит и не заполняет.
 //    Боту отвечаем «успехом», чтобы не раскрывать защиту.
 if (trim((string) ($_POST['website'] ?? '')) !== '') {
-    log_app('notice', "Honeypot сработал, IP {$ip}");
+    log_app('notice', 'Honeypot сработал');
     json_out(['ok' => true, 'booking_id' => 0]);
 }
 
@@ -30,21 +36,16 @@ if (rate_limit_exceeded($ip)) {
     ], 429);
 }
 
-// 3. Серверная проверка SmartCaptcha
-if (!smartcaptcha_verify($_POST['smart-token'] ?? null, $ip)) {
-    json_out(['error' => 'Не пройдена проверка «я не робот». Обновите страницу и попробуйте ещё раз.', 'code' => 'captcha'], 400);
-}
-
-// 4. Согласие на обработку ПДн обязательно (проверяется и на фронте, и здесь)
+// Согласие на обработку ПДн обязательно (проверяется и на фронте, и здесь)
 if (($_POST['consent'] ?? '') !== '1') {
     json_out(['error' => 'Для записи нужно согласие на обработку персональных данных.', 'code' => 'consent'], 400);
 }
 
-// 5. Валидация полей
+// Валидация полей
 $name    = trim((string) ($_POST['name'] ?? ''));
 $phone   = normalize_phone((string) ($_POST['phone'] ?? ''));
 $comment = trim((string) ($_POST['comment'] ?? ''));
-$slotId  = (int) ($_POST['slot_id'] ?? 0);
+$slotId  = filter_var($_POST['slot_id'] ?? '', FILTER_VALIDATE_INT);
 
 if (!mb_check_encoding($name, 'UTF-8') || !mb_check_encoding($comment, 'UTF-8')) {
     json_out(['error' => 'Текст должен быть в кодировке UTF-8.', 'code' => 'validation'], 400);
@@ -65,7 +66,7 @@ if ($slotId <= 0) {
 // Специалист необязателен; неизвестный id молча считаем как «любой свободный»,
 // чтобы устаревшая вкладка со старым списком не ломала запись
 $master = trim((string) ($_POST['master'] ?? ''));
-if ($master !== '' && staff_find($master) === null) {
+if ($master !== '' && staff_find($master, true) === null) {
     $master = '';
 }
 
@@ -74,13 +75,24 @@ if ($hours === null) {
     json_out(['error' => 'Выберите от 1 до ' . MAX_BOOKING_HOURS . ' часов или от 1 до ' . MAX_BOOKING_DAYS . ' дней.', 'code' => 'validation'], 400);
 }
 
+if (!smartcaptcha_verify($_POST['smart-token'] ?? null, $ip)) {
+    json_out(['error' => 'Не пройдена проверка «я не робот». Обновите страницу и попробуйте ещё раз.', 'code' => 'captcha'], 400);
+}
+
 $pdo = db();
 $slotTakenMsg = 'Этот слот только что заняли, выберите другой.';
+$inTransaction = false;
 
 try {
     // BEGIN IMMEDIATE сразу берёт блокировку записи — две параллельные брони
     // одного слота не пройдут (плюс страхует UNIQUE-ограничение bookings.slot_id)
     $pdo->exec('BEGIN IMMEDIATE');
+    $inTransaction = true;
+    // Повторяем под блокировкой, чтобы параллельные заявки не обходили лимит.
+    if (rate_limit_exceeded($ip)) {
+        $pdo->exec('ROLLBACK');
+        json_out(['error' => 'Слишком много заявок. Попробуйте позже или позвоните: ' . STUDIO_PHONE, 'code' => 'rate_limit'], 429);
+    }
 
     $st = $pdo->prepare('SELECT id, date, time_start, time_end, status FROM slots WHERE id = ?');
     $st->execute([$slotId]);
@@ -136,9 +148,10 @@ try {
         }
     }
 
+    rate_limit_add($ip);
     $pdo->exec('COMMIT');
 } catch (PDOException $e) {
-    if ($pdo->inTransaction()) {
+    if ($inTransaction) {
         $pdo->exec('ROLLBACK');
     }
     // Нарушение UNIQUE (slot_id) — классическая гонка двух клиентов
@@ -149,10 +162,12 @@ try {
     json_out(['error' => 'Не получилось сохранить заявку. Позвоните нам: ' . STUDIO_PHONE, 'code' => 'server'], 500);
 }
 
-rate_limit_add($ip);
-
 // Уведомления после коммита: их сбой не отменяет бронь
-notify_new_booking($bookingId, $slot['date'], $timeLabel, $master);
+try {
+    notify_new_booking($bookingId, $slot['date'], $timeLabel, $master);
+} catch (Throwable) {
+    log_app('error', "Не удалось подготовить уведомления о заявке №{$bookingId}");
+}
 
 json_out([
     'ok'          => true,

@@ -10,11 +10,8 @@ require_admin();
 
 $pdo = db();
 
-$validDate = static fn (?string $d): string =>
-    ($d !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) ? $d : '';
-
-$fFrom   = $validDate($_REQUEST['f_from'] ?? null);
-$fTo     = $validDate($_REQUEST['f_to'] ?? null);
+$fFrom   = valid_iso_date($_REQUEST['f_from'] ?? null) ?? '';
+$fTo     = valid_iso_date($_REQUEST['f_to'] ?? null) ?? '';
 $fStatus = in_array($_REQUEST['f_status'] ?? '', ['new', 'confirmed', 'cancelled'], true)
     ? $_REQUEST['f_status'] : '';
 
@@ -25,8 +22,8 @@ $backUrl = '/admin/bookings.php?' . http_build_query(array_filter([
 // --- Действия (POST + CSRF) ---
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     csrf_verify();
-    $id  = (int) ($_POST['id'] ?? 0);
-    $act = (string) ($_POST['act'] ?? '');
+    $id  = filter_var($_POST['id'] ?? '', FILTER_VALIDATE_INT);
+    $act = $_POST['act'] ?? '';
 
     // Сессия может занимать несколько часов подряд, поэтому освобождаем все
     // связанные слоты, а не только тот, с которого началась запись
@@ -40,12 +37,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     };
 
     if ($id > 0 && $act === 'status') {
-        $newStatus = (string) ($_POST['status'] ?? '');
+        $newStatus = $_POST['status'] ?? '';
         if (in_array($newStatus, ['new', 'confirmed', 'cancelled'], true)) {
             $pdo->exec('BEGIN IMMEDIATE');
             $st = $pdo->prepare('SELECT status FROM bookings WHERE id = ?');
             $st->execute([$id]);
-            if ($st->fetch() !== false) {
+            $oldStatus = $st->fetchColumn();
+            if ($oldStatus !== false && $oldStatus !== 'cancelled') {
                 $pdo->prepare('UPDATE bookings SET status = ? WHERE id = ?')->execute([$newStatus, $id]);
                 // Отмена возвращает время в продажу; заявка хранит снапшот даты и времени
                 if ($newStatus === 'cancelled') {
@@ -154,6 +152,7 @@ require dirname(__DIR__) . '/app/includes/layout/admin_header.php';
         <td class="nowrap"><span class="muted" title="IP: <?= e($b['ip']) ?>"><?= e($b['consent_at']) ?></span></td>
         <td><span class="badge badge-<?= e($b['status']) ?>"><?= e($statusNames[$b['status']] ?? $b['status']) ?></span></td>
         <td class="nowrap">
+          <?php if ($b['status'] !== 'cancelled'): ?>
           <form method="post" action="/admin/bookings.php" class="admin-form-inline">
             <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
@@ -169,6 +168,7 @@ require dirname(__DIR__) . '/app/includes/layout/admin_header.php';
             </select>
             <button class="btn btn-ghost btn-sm" type="submit">Сохранить</button>
           </form>
+          <?php endif; ?>
           <form method="post" action="/admin/bookings.php"
                 data-confirm="Удалить заявку №<?= (int) $b['id'] ?> безвозвратно вместе с персональными данными?">
             <input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>">

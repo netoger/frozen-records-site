@@ -10,15 +10,17 @@ function session_boot(): void
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
+    header('X-Robots-Tag: noindex, nofollow');
     session_name('frz_sid');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
-        'secure'   => !empty($_SERVER['HTTPS']),
+        'secure'   => ($_SERVER['HTTPS'] ?? '') === 'on'
+            || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https',
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
-    session_start();
+    session_start(['use_strict_mode' => 1]);
 }
 
 function csrf_token(): string
@@ -34,8 +36,8 @@ function csrf_token(): string
 function csrf_verify(): void
 {
     session_boot();
-    $sent = (string) ($_POST['csrf'] ?? '');
-    if ($sent === '' || empty($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $sent)) {
+    $sent = $_POST['csrf'] ?? '';
+    if (!is_string($sent) || $sent === '' || empty($_SESSION['csrf']) || !hash_equals($_SESSION['csrf'], $sent)) {
         http_response_code(403);
         exit('Ошибка проверки формы (CSRF). Вернитесь назад и попробуйте ещё раз.');
     }
@@ -70,7 +72,7 @@ function login_fail(string $ip): void
 {
     db()->prepare("INSERT INTO login_attempts (ip, created_at) VALUES (?, datetime('now','localtime'))")
         ->execute([$ip]);
-    log_app('warning', "Админка: неверный пароль с IP {$ip}");
+    log_app('warning', 'Админка: неверный пароль');
     usleep(700_000); // задержка затрудняет перебор
 }
 

@@ -76,8 +76,8 @@ function bot_admin_chat_ids(): array
         $ids = $st->fetchAll(PDO::FETCH_COLUMN, 0);
     }
     $main = cfg('TELEGRAM_CHAT_ID');
-    if ($main !== '') {
-        $ids[] = $main;
-    }
+    $ids[] = $main;
+    // Личные чаты имеют положительный ID. Старые записи групп не используем.
+    $ids = array_filter($ids, static fn ($id): bool => preg_match('/^[1-9][0-9]*$/D', (string) $id) === 1);
     return array_values(array_unique(array_map('strval', $ids)));
 }

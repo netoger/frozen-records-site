@@ -81,9 +81,9 @@ function staff_list(bool $onlyActive = true): array
 }
 
 /** Специалист по id или null */
-function staff_find(string $id): ?array
+function staff_find(string $id, bool $onlyActive = false): ?array
 {
-    foreach (staff_list(false) as $person) {
+    foreach (staff_list($onlyActive) as $person) {
         if ($person['id'] === $id) {
             return $person;
         }

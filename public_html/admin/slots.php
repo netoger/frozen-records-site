@@ -12,17 +12,14 @@ require_admin();
 $pdo = db();
 $today = date('Y-m-d');
 
-$day = (string) ($_REQUEST['d'] ?? $today);
-if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) || strtotime($day) === false) {
-    $day = $today;
-}
+$day = valid_iso_date($_REQUEST['d'] ?? null) ?? $today;
 
 $notice = '';
 
 // --- Действия (POST + CSRF) ---
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     csrf_verify();
-    $act = (string) ($_POST['act'] ?? '');
+    $act = $_POST['act'] ?? '';
 
     if ($act === 'generate') {
         // Та же функция, что и в cron — логика генерации в одном месте
@@ -31,14 +28,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         log_app('info', "Админка: сгенерированы слоты, новых {$created}");
     }
 
-    if ($act === 'toggle') {
-        $id = (int) ($_POST['id'] ?? 0);
+    $id = filter_var($_POST['id'] ?? '', FILTER_VALIDATE_INT);
+    if ($act === 'toggle' && $id > 0) {
         // Забронированный слот закрыть нельзя — сначала отмените заявку
         $pdo->prepare(
             "UPDATE slots SET status = CASE status WHEN 'free' THEN 'closed' WHEN 'closed' THEN 'free' ELSE status END
              WHERE id = ?"
         )->execute([$id]);
-        header('Location: /admin/slots.php?d=' . urlencode((string) ($_POST['d'] ?? $day)));
+        header('Location: /admin/slots.php?d=' . urlencode($day));
         exit;
     }
 }

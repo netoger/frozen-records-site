@@ -1,5 +1,7 @@
 User-agent: *
+Disallow: /app/
 Disallow: /admin/
 Disallow: /api/
+Disallow: /error.php
 
 Sitemap: https://frozenrecords.tw1.ru/sitemap.xml

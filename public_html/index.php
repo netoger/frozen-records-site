@@ -5,9 +5,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/app/includes/staff.php';
 
-$pageTitle = 'Фрозен Рекордс — студия звукозаписи в Казани, запись круглосуточно';
-$pageDesc  = 'Студия звукозаписи в центре Казани: запись вокала от 500 ₽/час, сведение, мастеринг, '
-    . 'трек под ключ. Работаем круглосуточно, онлайн-запись на удобное время.';
+$pageTitle = 'Студия звукозаписи в Казани — Фрозен Рекордс';
+$pageDesc  = 'Запись вокала, сведение и мастеринг в центре Казани, ул. Миславского, 9. '
+    . 'Студия работает круглосуточно, самостоятельная запись — 500 ₽/час. Цены и онлайн-запись.';
 $canonical = BASE_URL . '/';
 $activeNav = 'home';
 // has-intro — постоянный признак страницы с заставкой (шапка вне потока),
@@ -16,18 +16,22 @@ $activeNav = 'home';
 $bodyClass = 'has-intro at-intro compact-home';
 
 // JSON-LD schema.org LocalBusiness
+$studioId = BASE_URL . '/#studio';
 $jsonLd = [
     '@context'  => 'https://schema.org',
     '@type'     => 'LocalBusiness',
+    '@id'       => $studioId,
     'name'      => STUDIO_NAME,
     'legalName' => COMPANY_NAME,
     'description' => 'Студия звукозаписи в центре Казани: запись вокала, сведение, мастеринг. Работаем круглосуточно.',
     'url'       => BASE_URL . '/',
     'image'     => BASE_URL . '/assets/img/og-cover.jpg',
-    'telephone' => '+79503151420',
+    'logo'      => BASE_URL . '/favicon-512.png',
+    'telephone' => substr(STUDIO_PHONE_HREF, 4),
     'email'     => STUDIO_EMAIL,
     'priceRange' => 'от 500 ₽',
     'currenciesAccepted' => 'RUB',
+    'hasMap' => STUDIO_MAP_LINK,
     'address'   => [
         '@type'           => 'PostalAddress',
         'streetAddress'   => 'ул. Миславского, д. 9',
@@ -48,12 +52,21 @@ $jsonLd = [
         'closes'    => '23:59',
     ],
     'sameAs' => [STUDIO_TELEGRAM],
+    'hasOfferCatalog' => [
+        '@type' => 'OfferCatalog',
+        'name' => 'Услуги студии звукозаписи',
+        'itemListElement' => array_map(static fn (string $name): array => [
+            '@type' => 'Offer',
+            'url' => BASE_URL . '/#prices',
+            'itemOffered' => ['@type' => 'Service', 'name' => $name, 'provider' => ['@id' => $studioId]],
+        ], ['Запись вокала', 'Самостоятельная запись', 'Сведение вокала', 'Мастеринг', 'Биты на заказ']),
+    ],
 ];
 // Логотип заставки грузим в первую очередь — он первое, что видит посетитель
-$extraHead = '<link rel="preload" as="image" href="' . e(asset('/assets/img/logo-main.webp'))
+$extraHead = '<link rel="preload" as="image" href="' . e('/assets/img/logo-main.webp')
     . '" type="image/webp">' . "\n"
     . '<script type="application/ld+json">'
-    . json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+    . json_encode($jsonLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_THROW_ON_ERROR)
     . '</script>';
 
 // Аудио-примеры работ. Файлы .mp3 положите в public_html/assets/audio/
@@ -114,7 +127,7 @@ require_once __DIR__ . '/app/includes/layout/header.php';
 <nav class="home-shortcuts" aria-label="Быстрый выбор услуги">
   <a href="/booking/"><span>Запись вокала</span><strong>Выбрать время <span aria-hidden="true">↗</span></strong><small>От 1 часа до 7 дней</small></a>
   <a href="#prices"><span>Сведение и мастеринг</span><strong>Найти специалиста <span aria-hidden="true">↗</span></strong><small>Услуги и цены команды</small></a>
-  <a href="#portfolio"><span>Внутри студии</span><strong>Посмотреть пространство <span aria-hidden="true">↗</span></strong><small>Фотографии и примеры работ</small></a>
+  <a href="#portfolio"><span>Внутри студии</span><strong>Посмотреть пространство <span aria-hidden="true">↗</span></strong><small>Фотографии студии</small></a>
   <a href="#route"><span>Миславского, 9</span><strong>Как добраться <span aria-hidden="true">↗</span></strong><small>Центр Казани · цокольный этаж</small></a>
 </nav>
 </div>

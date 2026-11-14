@@ -57,8 +57,18 @@ function json_out(array $data, int $code = 200): never
 {
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+// Проверяем формат и реальность календарной даты без нормализации 30 февраля.
+function valid_iso_date(mixed $value): ?string
+{
+    if (!is_string($value) || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $value, $m)) {
+        return null;
+    }
+    return checkdate((int) $m[2], (int) $m[3], (int) $m[1]) ? $value : null;
 }
 
 // Только REMOTE_ADDR: заголовкам вида X-Forwarded-For доверять нельзя,

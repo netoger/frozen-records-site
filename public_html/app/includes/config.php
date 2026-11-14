@@ -6,6 +6,8 @@ declare(strict_types=1);
 
 define('ROOT_DIR', dirname(__DIR__));
 define('DATA_DIR', ROOT_DIR . '/data');
+const TELEGRAM_OFFSET_FILE = DATA_DIR . '/tg_offset.log';
+const TELEGRAM_ENDPOINT_FILE = DATA_DIR . '/tg_endpoint.log';
 
 // --- значение из .env (файл в корне проекта, вне webroot) ---
 function cfg(string $key, string $default = ''): string
